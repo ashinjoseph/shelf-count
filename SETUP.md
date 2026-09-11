@@ -108,6 +108,22 @@ so treat it like one and keep it to staff.
 
 ---
 
+## Updating a deployment that is already live
+
+**Deploy → Manage deployments →** the pencil **→ Version: New version → Deploy**
+
+Not **New deployment**. That mints a fresh `/exec` URL and strands every phone
+on the old one — the counts are safe on those devices, but they sit at "n
+waiting" until someone gets the new link to every counter mid-shift. Editing the
+existing deployment keeps the URL staff already have on their home screens.
+
+Paste the new code first (step 2a), then deploy the new version. A phone picks
+it up on the next open; a phone mid-count keeps counting on the old code until
+it is reloaded, which is fine — the sheet and the queued entries are the same
+either way.
+
+---
+
 ## Running the count
 
 - Pick a section chip, walk that section, type the number in.
