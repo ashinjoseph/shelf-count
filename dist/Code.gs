@@ -554,13 +554,43 @@ input{font:inherit; color:inherit}
     return typeof google !== 'undefined' && google.script && google.script.run;
   }
 
+  // google.script.run has no timeout. When the call never comes back — the
+  // script mid-deploy, the account over quota, or the long poll dropped as
+  // someone walks into the chiller — neither handler ever fires, and the boot
+  // screen sits on "Loading the product list…" with no error and no button
+  // until the phone is closed. A counter reads that as an app that does not
+  // work. Silence has to become a failure, or there is no way out of it.
+  var ANSWER_BY = 20000;
+
   function bootstrap(onOk, onErr){
     if (!hasServer()) {
       onErr({message:'This page has to be opened from the web app link that ends ' +
                      'in /exec. Opening the HTML file directly will not work.'});
       return;
     }
-    google.script.run.withSuccessHandler(onOk).withFailureHandler(onErr).rpcBootstrap();
+    var reported = false;
+    var timer = setTimeout(function(){
+      if (reported) return;
+      reported = true;
+      onErr({message:'The connection timed out after ' + (ANSWER_BY / 1000) + ' seconds.'});
+    }, ANSWER_BY);
+
+    google.script.run
+      .withSuccessHandler(function(res){
+        // A late answer is still the answer. The timeout may already have put
+        // the Try again button on screen; the roster arriving a moment after
+        // replaces it with the count, which is what the counter wanted.
+        clearTimeout(timer);
+        reported = true;
+        onOk(res);
+      })
+      .withFailureHandler(function(err){
+        if (reported) return;
+        reported = true;
+        clearTimeout(timer);
+        onErr(err);
+      })
+      .rpcBootstrap();
   }
 
   function loadRoster(res){
@@ -936,6 +966,14 @@ input{font:inherit; color:inherit}
       bootFailed((err && err.message) ? err.message : String(err || 'Unknown error'));
     });
   }
+
+  // Anything thrown before the count is on screen would otherwise leave a
+  // blank page: boot hidden, app empty, nothing to read and nothing to tap.
+  // Put it on the boot screen instead, where there is a Try again button.
+  window.addEventListener('error', function(e){
+    if (booted) return;
+    bootFailed((e && e.message) ? e.message : 'Something went wrong loading the page.');
+  });
 
   $('retry').addEventListener('click', boot);
   boot();
