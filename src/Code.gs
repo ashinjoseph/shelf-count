@@ -44,24 +44,6 @@ function doGet() {
     );
 }
 
-// ── Access ─────────────────────────────────────────────────
-//  The deployment has to be reachable by anyone with the link, because
-//  staff open it on personal phones without Google accounts. A shared
-//  code in Script Properties is the proportionate gate for a temporary
-//  tool; leave the property unset and the gate is simply off.
-
-function accessCode_() {
-  return (PropertiesService.getScriptProperties().getProperty('ACCESS_CODE') || '').trim();
-}
-
-function checkAccess_(code) {
-  const required = accessCode_();
-  if (!required) return;
-  if ((code || '').toString().trim() !== required) {
-    throw new Error('BAD_CODE');
-  }
-}
-
 // ── Sheet helpers ──────────────────────────────────────────
 
 /**
@@ -126,16 +108,6 @@ function readRows_(sh) {
   return sh.getRange(DATA_START_ROW, 1, last - DATA_START_ROW + 1, NUM_COLS).getValues();
 }
 
-/**
- * Anything a counter types that lands in a cell has to be inert. setValues
- * treats a leading =, +, - or @ as a formula, so a name typed as
- * "=IMPORTXML(...)" would execute against this sheet on write.
- */
-function safeText_(value) {
-  const s = (value === null || value === undefined ? '' : value).toString().slice(0, 60);
-  return /^[=+\-@]/.test(s) ? "'" + s : s;
-}
-
 function numOrBlank_(value) {
   if (value === '' || value === null || value === undefined) return '';
   const n = Number(value);
@@ -149,9 +121,7 @@ function numOrBlank_(value) {
  * has already been counted, so a counter who switches phones mid-shift
  * picks up where the sheet is rather than where their old device was.
  */
-function rpcBootstrap(code) {
-  checkAccess_(code);
-
+function rpcBootstrap() {
   const roster = readRows_(sheet_())
     .filter(function (row) { return (row[COL.product_name - 1] || '').toString().trim(); })
     .map(function (row) {
@@ -168,7 +138,7 @@ function rpcBootstrap(code) {
       };
     });
 
-  return {ok: true, products: roster, serverTime: Date.now(), needsCode: !!accessCode_()};
+  return {ok: true, products: roster, serverTime: Date.now()};
 }
 
 // ── RPC: submit counts ─────────────────────────────────────
@@ -185,8 +155,7 @@ function rpcBootstrap(code) {
  * makes it safe for the device to retry a batch whose response it never
  * saw.
  */
-function rpcSubmit(code, entries) {
-  checkAccess_(code);
+function rpcSubmit(entries) {
   if (!entries || !entries.length) return {applied: 0, unmatched: [], serverTime: Date.now()};
 
   const lock = LockService.getScriptLock();
@@ -214,7 +183,6 @@ function rpcSubmit(code, entries) {
       row[COL.stock - 1] = numOrBlank_(entry.stock);
       row[COL.min - 1] = numOrBlank_(entry.min);
       row[COL.max - 1] = numOrBlank_(entry.max);
-      row[COL.counted_by - 1] = safeText_(entry.by);
       row[COL.counted_at - 1] = entry.at ? new Date(entry.at) : new Date();
       touched[i] = true;
     });
@@ -245,31 +213,10 @@ function onOpen() {
 
   SpreadsheetApp.getUi()
     .createMenu('📦 Shelf Count')
-    .addItem('Set access code…', 'promptAccessCode')
     .addItem('Clear all counts…', 'promptClearCounts')
     .addSeparator()
     .addItem('Counting progress', 'showProgress')
     .addToUi();
-}
-
-function promptAccessCode() {
-  const ui = SpreadsheetApp.getUi();
-  const res = ui.prompt(
-    'Access code',
-    'Staff type this to open the count. Leave blank to turn the gate off.',
-    ui.ButtonSet.OK_CANCEL
-  );
-  if (res.getSelectedButton() !== ui.Button.OK) return;
-
-  const code = res.getResponseText().trim();
-  const props = PropertiesService.getScriptProperties();
-  if (code) {
-    props.setProperty('ACCESS_CODE', code);
-    ui.alert('Access code set to "' + code + '".');
-  } else {
-    props.deleteProperty('ACCESS_CODE');
-    ui.alert('Access code removed — anyone with the link can count.');
-  }
 }
 
 function promptClearCounts() {

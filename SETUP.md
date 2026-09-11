@@ -98,21 +98,13 @@ account. That is what the access code in the next step is for.
 
 Copy the `/exec` URL. That is the link staff get.
 
-## 4. Set an access code
-
-Reload the spreadsheet, then **📦 Shelf Count → Set access code…** and pick
-something short. Anyone with the link can otherwise open the count and write to
-the sheet.
-
-Leaving it blank turns the gate off, which is fine if the link never leaves a
-group chat you control.
-
-## 5. Hand it out
+## 4. Hand it out
 
 Send staff the `/exec` link. Tell them to **Add to Home Screen** — it opens
 full-screen and, more usefully, is harder to close by accident than a tab.
 
-They type their name once. After that the link opens straight into the count.
+There is no sign-in. Opening the link is enough — the link is the credential,
+so treat it like one and keep it to staff.
 
 ---
 
@@ -153,7 +145,8 @@ generates for you. Once that template is in hand it is a small script.
 
 | Symptom | Cause |
 |---|---|
-| "Could not reach the sheet" on a phone that has never opened it | No signal on first run. The roster has to come down once before offline use works. |
-| Counts stuck on "n waiting" | Deployment was redeployed and the URL changed, or the access code changed. Counts are safe on the device — reload and re-enter. |
+| "Could not load the product list" | The screen prints the actual reason. `SPREADSHEET_ID` not set means step 2b was skipped; `Sheet "stock_count" not found` means the tab was renamed. |
+| That error on a phone that has never opened the app | No signal on first run. The list has to come down once before offline use works. |
+| Counts stuck on "n waiting" | The deployment was replaced and the URL changed. Counts are safe on the device — open the current link and they send. |
 | An item reports "not in the list" | Its barcode is not in the `stock_count` tab, usually because the zeros were stripped on import. Re-upload the workbook from step 1. |
 | Barcodes show as `7.28900002E11` | The sheet was loaded from the CSV instead of the xlsx. Re-upload the workbook from step 1. |

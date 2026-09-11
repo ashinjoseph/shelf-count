@@ -56,24 +56,6 @@ function doGet() {
     );
 }
 
-// ── Access ─────────────────────────────────────────────────
-//  The deployment has to be reachable by anyone with the link, because
-//  staff open it on personal phones without Google accounts. A shared
-//  code in Script Properties is the proportionate gate for a temporary
-//  tool; leave the property unset and the gate is simply off.
-
-function accessCode_() {
-  return (PropertiesService.getScriptProperties().getProperty('ACCESS_CODE') || '').trim();
-}
-
-function checkAccess_(code) {
-  const required = accessCode_();
-  if (!required) return;
-  if ((code || '').toString().trim() !== required) {
-    throw new Error('BAD_CODE');
-  }
-}
-
 // ── Sheet helpers ──────────────────────────────────────────
 
 /**
@@ -138,16 +120,6 @@ function readRows_(sh) {
   return sh.getRange(DATA_START_ROW, 1, last - DATA_START_ROW + 1, NUM_COLS).getValues();
 }
 
-/**
- * Anything a counter types that lands in a cell has to be inert. setValues
- * treats a leading =, +, - or @ as a formula, so a name typed as
- * "=IMPORTXML(...)" would execute against this sheet on write.
- */
-function safeText_(value) {
-  const s = (value === null || value === undefined ? '' : value).toString().slice(0, 60);
-  return /^[=+\-@]/.test(s) ? "'" + s : s;
-}
-
 function numOrBlank_(value) {
   if (value === '' || value === null || value === undefined) return '';
   const n = Number(value);
@@ -161,9 +133,7 @@ function numOrBlank_(value) {
  * has already been counted, so a counter who switches phones mid-shift
  * picks up where the sheet is rather than where their old device was.
  */
-function rpcBootstrap(code) {
-  checkAccess_(code);
-
+function rpcBootstrap() {
   const roster = readRows_(sheet_())
     .filter(function (row) { return (row[COL.product_name - 1] || '').toString().trim(); })
     .map(function (row) {
@@ -180,7 +150,7 @@ function rpcBootstrap(code) {
       };
     });
 
-  return {ok: true, products: roster, serverTime: Date.now(), needsCode: !!accessCode_()};
+  return {ok: true, products: roster, serverTime: Date.now()};
 }
 
 // ── RPC: submit counts ─────────────────────────────────────
@@ -197,8 +167,7 @@ function rpcBootstrap(code) {
  * makes it safe for the device to retry a batch whose response it never
  * saw.
  */
-function rpcSubmit(code, entries) {
-  checkAccess_(code);
+function rpcSubmit(entries) {
   if (!entries || !entries.length) return {applied: 0, unmatched: [], serverTime: Date.now()};
 
   const lock = LockService.getScriptLock();
@@ -226,7 +195,6 @@ function rpcSubmit(code, entries) {
       row[COL.stock - 1] = numOrBlank_(entry.stock);
       row[COL.min - 1] = numOrBlank_(entry.min);
       row[COL.max - 1] = numOrBlank_(entry.max);
-      row[COL.counted_by - 1] = safeText_(entry.by);
       row[COL.counted_at - 1] = entry.at ? new Date(entry.at) : new Date();
       touched[i] = true;
     });
@@ -257,31 +225,10 @@ function onOpen() {
 
   SpreadsheetApp.getUi()
     .createMenu('📦 Shelf Count')
-    .addItem('Set access code…', 'promptAccessCode')
     .addItem('Clear all counts…', 'promptClearCounts')
     .addSeparator()
     .addItem('Counting progress', 'showProgress')
     .addToUi();
-}
-
-function promptAccessCode() {
-  const ui = SpreadsheetApp.getUi();
-  const res = ui.prompt(
-    'Access code',
-    'Staff type this to open the count. Leave blank to turn the gate off.',
-    ui.ButtonSet.OK_CANCEL
-  );
-  if (res.getSelectedButton() !== ui.Button.OK) return;
-
-  const code = res.getResponseText().trim();
-  const props = PropertiesService.getScriptProperties();
-  if (code) {
-    props.setProperty('ACCESS_CODE', code);
-    ui.alert('Access code set to "' + code + '".');
-  } else {
-    props.deleteProperty('ACCESS_CODE');
-    ui.alert('Access code removed — anyone with the link can count.');
-  }
 }
 
 function promptClearCounts() {
@@ -368,29 +315,29 @@ body{
 button{font:inherit; color:inherit; cursor:pointer}
 input{font:inherit; color:inherit}
 
-/* ---------- gate ---------- */
-.gate{
+/* ---------- boot screen ---------- */
+.boot{
   min-height:100%; display:flex; flex-direction:column; justify-content:center;
   gap:16px; padding:28px 20px; max-width:420px; margin:0 auto; background:var(--paper);
 }
-.gate h1{
+.boot h1{
   font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700; font-size:26px;
   margin:0; letter-spacing:-.01em;
 }
-.gate p{margin:0; color:var(--ink-2); font-size:14px}
-.gate label{display:flex; flex-direction:column; gap:5px; font-size:12px;
+.boot p{margin:0; color:var(--ink-2); font-size:14px}
+.boot label{display:flex; flex-direction:column; gap:5px; font-size:12px;
   letter-spacing:.06em; text-transform:uppercase; font-weight:600; color:var(--ink-3)}
-.gate input{
+.boot input{
   padding:11px 12px; border-radius:8px; border:1px solid var(--line-2);
   background:var(--surface); font-size:16px; font-weight:400; letter-spacing:0; text-transform:none;
 }
-.gate input:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent}
-.gate .go{
+.boot input:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent}
+.boot .go{
   border:1px solid var(--ink); background:var(--ink); color:var(--paper);
   border-radius:8px; padding:12px; font-size:15px; font-weight:600; margin-top:4px;
 }
-.gate .err{color:var(--clay); font-size:13px; font-weight:500}
-.gate .err[hidden]{display:none}
+.boot .err{color:var(--clay); font-size:13px; font-weight:500}
+.boot .err[hidden]{display:none}
 
 /* ---------- app ---------- */
 .app{min-height:100%; display:flex; flex-direction:column; background:var(--surface)}
@@ -527,24 +474,17 @@ input{font:inherit; color:inherit}
 </head>
 <body>
 
-<div class="gate" id="gate">
+<div class="boot" id="boot">
   <h1>Shelf Count</h1>
-  <p id="gate-intro">Counting stock for the ePOS upload. Your numbers save on this
-     phone as you type, so you can lose signal or put it in your pocket without losing the count.</p>
-  <label for="who">Your name
-    <input id="who" type="text" autocomplete="name" placeholder="e.g. Ashin">
-  </label>
-  <label for="code" id="code-label" hidden>Access code
-    <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="Ask the manager">
-  </label>
-  <p class="err" id="gate-err" hidden></p>
-  <button class="go" id="start">Start counting</button>
+  <p id="boot-msg">Loading the product list…</p>
+  <p class="err" id="boot-err" hidden></p>
+  <button class="go" id="retry" hidden>Try again</button>
 </div>
 
 <div class="app" id="app" hidden>
   <div class="appbar">
     <div class="appbar-top">
-      <h2>Shelf Count<small id="whoami"></small></h2>
+      <h2>Shelf Count<small>Stock count for ePOS</small></h2>
       <span class="sync" id="sync" data-state="synced"><span class="dot"></span><span id="synctxt">Loading</span></span>
     </div>
     <div class="searchwrap">
@@ -581,7 +521,7 @@ input{font:inherit; color:inherit}
 
   var $ = function(id){ return document.getElementById(id); };
   var PRODUCTS = [], GROUPS = [], BY_KEY = {};
-  var state = {who:'', code:'', counts:{}, outbox:{}, section:0, query:'', lastSync:0};
+  var state = {counts:{}, outbox:{}, section:0, query:'', lastSync:0};
   var sending = false, retries = 0, retryTimer = null, hiddenAt = 0, booted = false;
 
   // ---- persistence -------------------------------------------------------
@@ -593,7 +533,7 @@ input{font:inherit; color:inherit}
     saveTimer = setTimeout(function(){
       try {
         localStorage.setItem(KEY, JSON.stringify({
-          who:state.who, code:state.code, counts:state.counts, outbox:state.outbox,
+          counts:state.counts, outbox:state.outbox,
           section:state.section, lastSync:state.lastSync, roster:PRODUCTS
         }));
       } catch (e) {}
@@ -603,7 +543,6 @@ input{font:inherit; color:inherit}
     try {
       var s = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (!s) return null;
-      state.who = s.who || ''; state.code = s.code || '';
       state.counts = s.counts || {}; state.outbox = s.outbox || {};
       state.section = s.section || 0; state.lastSync = s.lastSync || 0;
       return s.roster || null;
@@ -615,12 +554,13 @@ input{font:inherit; color:inherit}
     return typeof google !== 'undefined' && google.script && google.script.run;
   }
 
-  function bootstrap(code, onOk, onErr){
-    if (!hasServer()) { onErr({message:'NO_SERVER'}); return; }
-    google.script.run
-      .withSuccessHandler(onOk)
-      .withFailureHandler(onErr)
-      .rpcBootstrap(code);
+  function bootstrap(onOk, onErr){
+    if (!hasServer()) {
+      onErr({message:'This page has to be opened from the web app link that ends ' +
+                     'in /exec. Opening the HTML file directly will not work.'});
+      return;
+    }
+    google.script.run.withSuccessHandler(onOk).withFailureHandler(onErr).rpcBootstrap();
   }
 
   function loadRoster(res){
@@ -654,7 +594,7 @@ input{font:inherit; color:inherit}
     var batch = keys.map(function(k){
       var e = state.outbox[k];
       stamps[k] = e.at;
-      return {barcode:BY_KEY[k] ? BY_KEY[k].barcode : k, stock:e.stock, min:e.min, max:e.max, at:e.at, by:state.who};
+      return {barcode:BY_KEY[k] ? BY_KEY[k].barcode : k, stock:e.stock, min:e.min, max:e.max, at:e.at};
     });
 
     sending = true;
@@ -682,15 +622,11 @@ input{font:inherit; color:inherit}
         sending = false;
         retries++;
         renderSync();
-        if (err && /BAD_CODE/.test(err.message || '')) {
-          say('Access code changed', 'Your counts are safe on this phone. Reload and enter the new code to send them.');
-          return;
-        }
         // Back off, but never past a minute — the counter is still working.
         clearTimeout(retryTimer);
         retryTimer = setTimeout(flush, Math.min(60000, 2000 * Math.pow(2, Math.min(retries, 5))));
       })
-      .rpcSubmit(state.code, batch);
+      .rpcSubmit(batch);
   }
 
   // ---- status ------------------------------------------------------------
@@ -928,67 +864,52 @@ input{font:inherit; color:inherit}
   setInterval(function(){ if (!queued().length) renderSync(); }, 30000);
 
   // ---- boot --------------------------------------------------------------
+  // No sign-in: the link is the credential. Staff open it and start counting.
   var cachedRoster = restore();
 
   function openApp(){
-    $('gate').hidden = true;
+    $('boot').hidden = true;
     $('app').hidden = false;
-    $('whoami').textContent = state.who ? 'Counting as ' + state.who : '';
     booted = true;
     renderAll();
     flush();
   }
 
-  function fail(msg){
-    var err = $('gate-err');
-    err.textContent = msg;
-    err.hidden = false;
-    $('start').disabled = false;
-    $('start').textContent = 'Start counting';
+  function bootFailed(message){
+    $('boot-msg').textContent = 'Could not load the product list.';
+    // The real message, not a guess at it. Most failures here are setup — the
+    // spreadsheet not linked, or the tab renamed — and calling those a network
+    // problem sends someone looking in the wrong place entirely.
+    $('boot-err').textContent = message;
+    $('boot-err').hidden = false;
+    $('retry').hidden = false;
   }
 
-  $('start').addEventListener('click', function(){
-    var who = $('who').value.trim();
-    if (!who) { fail('Put your name in first — it goes next to every count you enter.'); return; }
-    state.who = who;
-    state.code = $('code').value.trim();
-    $('gate-err').hidden = true;
-    this.disabled = true;
-    this.textContent = 'Checking…';
+  function boot(){
+    $('boot-err').hidden = true;
+    $('retry').hidden = true;
+    $('boot-msg').textContent = 'Loading the product list…';
 
-    bootstrap(state.code, function(res){
+    bootstrap(function(res){
       loadRoster(res);
       persist();
       openApp();
     }, function(err){
-      var m = (err && err.message) || '';
-      if (/BAD_CODE/.test(m)) { fail('That code is not right. Ask the manager.'); return; }
       if (cachedRoster && cachedRoster.length) {
-        // Offline start: the roster and any counts from last time are on the
-        // device, so counting can carry on and send when signal returns.
+        // The list and any counts from last time are on the device, so counting
+        // carries on and sends when signal returns.
         loadRoster({products:cachedRoster});
         persist();
         openApp();
         say('Started offline', 'Using the list saved on this phone. Counts will send when you are back in signal.');
         return;
       }
-      fail('Could not reach the sheet, and there is no list saved on this phone yet. Try again in signal.');
+      bootFailed((err && err.message) ? err.message : String(err || 'Unknown error'));
     });
-  });
-
-  // Returning counter: name and code are already known, so go straight in.
-  if (state.who) {
-    $('who').value = state.who;
-    $('code').value = state.code;
   }
-  bootstrap(state.code, function(res){
-    $('code-label').hidden = !res.needsCode;
-    if (state.who && (!res.needsCode || state.code)) {
-      loadRoster(res); persist(); openApp();
-    }
-  }, function(){
-    $('code-label').hidden = false;
-  });
+
+  $('retry').addEventListener('click', boot);
+  boot();
 })();
 </script>
 </body>
