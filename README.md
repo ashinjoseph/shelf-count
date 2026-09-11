@@ -39,6 +39,8 @@ of the code is the offline queue, which runs in the browser.
 shelf-count/
 ├── build_stock_count_list.py   POS export → countable product list
 ├── build_stock_count_sheet.py  that list → the workbook you upload
+├── build_single_file.py        src/ → dist/Code.gs, one file to paste by hand
+├── dist/Code.gs                generated; for setting up without a terminal
 ├── Shelf Count.xlsx            upload this to Drive; barcodes typed as text
 ├── stock_count_list.csv        905 products, source for the workbook
 ├── stock_count_excluded.csv    the 26 dropped rows and why
