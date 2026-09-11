@@ -1,0 +1,642 @@
+<title>Shelf Count</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#FAF9F7; --surface:#FFFFFF; --surface-2:#F2F0EC;
+  --ink:#14181F; --ink-2:#4A4F57; --ink-3:#807B73;
+  --line:#E3E0DA; --line-2:#D2CEC6;
+  --pine:#1F5F52; --pine-soft:#E4EFEB; --pine-ink:#164a40;
+  --amber:#B8720C; --amber-soft:#FBF0DD;
+  --clay:#A8321F; --clay-soft:#FAE7E3;
+  --shadow:0 1px 2px rgba(20,24,31,.06), 0 8px 24px -12px rgba(20,24,31,.18);
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#101317; --surface:#181C21; --surface-2:#20252B;
+  --ink:#E9E6E0; --ink-2:#B0ABA3; --ink-3:#847F77;
+  --line:#2A2F36; --line-2:#39404A;
+  --pine:#5CB49F; --pine-soft:#16302B; --pine-ink:#8AD3C0;
+  --amber:#E0A046; --amber-soft:#2E2413;
+  --clay:#E0796A; --clay-soft:#2E1916;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --paper:#101317; --surface:#181C21; --surface-2:#20252B;
+  --ink:#E9E6E0; --ink-2:#B0ABA3; --ink-3:#847F77;
+  --line:#2A2F36; --line-2:#39404A;
+  --pine:#5CB49F; --pine-soft:#16302B; --pine-ink:#8AD3C0;
+  --amber:#E0A046; --amber-soft:#2E2413;
+  --clay:#E0796A; --clay-soft:#2E1916;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+}
+button{font:inherit; color:inherit; cursor:pointer}
+input{font:inherit; color:inherit}
+
+/* ---------- sample scaffolding (not part of the app) ---------- */
+.page{padding:20px 16px 40px; display:flex; flex-direction:column; align-items:center; gap:18px}
+.brief{width:100%; max-width:760px; display:flex; flex-direction:column; gap:10px}
+.brief h1{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700;
+  font-size:clamp(22px,5vw,30px); margin:0; letter-spacing:-.01em; text-wrap:balance;
+}
+.brief p{margin:0; color:var(--ink-2); max-width:64ch}
+.brief .tagrow{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px}
+.tag{
+  font-size:11px; letter-spacing:.06em; text-transform:uppercase; font-weight:600;
+  padding:4px 9px; border-radius:999px; background:var(--surface-2); color:var(--ink-2);
+  border:1px solid var(--line);
+}
+.demobar{
+  width:100%; max-width:760px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r); padding:12px 14px; display:flex; flex-wrap:wrap;
+  align-items:center; gap:10px;
+}
+.demobar .lbl{
+  font-size:11px; letter-spacing:.07em; text-transform:uppercase; font-weight:600;
+  color:var(--ink-3); margin-right:2px;
+}
+.demobtn{
+  background:var(--surface-2); border:1px solid var(--line-2); border-radius:7px;
+  padding:6px 11px; font-size:13px; font-weight:500;
+}
+.demobtn:hover{border-color:var(--ink-3)}
+.demobtn[aria-pressed="true"]{background:var(--clay-soft); border-color:var(--clay); color:var(--clay)}
+.demonote{font-size:12.5px; color:var(--ink-3); flex-basis:100%; margin:0}
+
+/* ---------- phone frame ---------- */
+.device{
+  width:100%; max-width:412px; background:var(--surface);
+  border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow);
+  overflow:hidden; display:flex; flex-direction:column;
+}
+@media (min-width:620px){ .device{height:min(840px,86vh)} }
+.app{flex:1; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column}
+@media (max-width:619px){ .app{overflow:visible} }
+
+/* ---------- app bar ---------- */
+.appbar{
+  position:sticky; top:0; z-index:5; background:var(--surface);
+  border-bottom:1px solid var(--line); padding:12px 14px 0;
+}
+.appbar-top{display:flex; align-items:center; gap:10px}
+.appbar h2{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700;
+  font-size:17px; margin:0; letter-spacing:.01em; flex:1;
+}
+.appbar h2 small{
+  display:block; font-family:"IBM Plex Sans",sans-serif; font-weight:400;
+  font-size:11.5px; color:var(--ink-3); letter-spacing:0;
+}
+.sync{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 8px;
+  border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap;
+  background:var(--pine-soft); color:var(--pine-ink); border:1px solid transparent;
+}
+.sync .dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:none}
+.sync[data-state="pending"]{background:var(--amber-soft); color:var(--amber)}
+.sync[data-state="sending"] .dot{animation:pulse 1s ease-in-out infinite}
+.sync[data-state="sending"]{background:var(--amber-soft); color:var(--amber)}
+.sync[data-state="offline"]{background:var(--clay-soft); color:var(--clay)}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){ .sync .dot{animation:none!important} }
+
+.searchwrap{position:relative; margin:10px 0}
+.search{
+  width:100%; padding:9px 32px 9px 32px; border-radius:8px;
+  border:1px solid var(--line-2); background:var(--surface-2); font-size:14.5px;
+}
+.search:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent}
+.searchwrap .ico{
+  position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--ink-3); pointer-events:none; font-size:13px;
+}
+.clearsearch{
+  position:absolute; right:4px; top:50%; transform:translateY(-50%);
+  border:0; background:none; color:var(--ink-3); padding:6px 8px; line-height:1; border-radius:6px;
+}
+.clearsearch:hover{color:var(--ink)}
+
+.chips{display:flex; gap:6px; overflow-x:auto; padding:0 0 10px; scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none; border:1px solid var(--line-2); background:var(--surface);
+  border-radius:999px; padding:5px 11px; font-size:12.5px; font-weight:500;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.chip .n{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.chip[aria-selected="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.chip[aria-selected="true"] .n{color:var(--paper); opacity:.7}
+.chip.done{border-color:var(--pine)}
+.chip.done .n{color:var(--pine)}
+
+/* ---------- resume banner ---------- */
+.resume{
+  margin:0 14px 12px; background:var(--amber-soft); border:1px solid var(--amber);
+  border-radius:var(--r); padding:10px 12px; display:flex; gap:10px; align-items:flex-start;
+}
+.resume[hidden]{display:none}
+.resume .txt{flex:1; font-size:13px; color:var(--ink)}
+.resume strong{display:block; font-weight:600; color:var(--amber); font-size:12.5px;
+  letter-spacing:.04em; text-transform:uppercase; margin-bottom:2px}
+.resume button{
+  border:1px solid var(--amber); background:transparent; color:var(--amber);
+  border-radius:7px; padding:5px 10px; font-size:12.5px; font-weight:600; flex:none;
+}
+
+/* ---------- list ---------- */
+.list{padding:0 0 8px; flex:1}
+.sechead{
+  position:sticky; top:0; z-index:2;
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+  background:var(--surface-2); padding:6px 14px;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; gap:10px;
+}
+.sechead .c{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:0}
+.row{
+  display:grid; grid-template-columns:1fr auto; gap:4px 10px; align-items:center;
+  padding:9px 14px 9px 12px; border-bottom:1px solid var(--line);
+  border-left:3px solid transparent;
+}
+.row.counted{border-left-color:var(--pine); background:linear-gradient(90deg,var(--pine-soft),transparent 42%)}
+.row .nm{font-size:14px; font-weight:500; line-height:1.3; overflow-wrap:anywhere}
+.row .meta{
+  grid-column:1; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3);
+  display:flex; gap:8px; flex-wrap:wrap; font-variant-numeric:tabular-nums;
+}
+.row .meta .pri{
+  font-family:"IBM Plex Sans",sans-serif; font-weight:600; letter-spacing:.05em;
+  color:var(--amber); text-transform:uppercase; font-size:10px;
+}
+.stepper{grid-row:1/3; grid-column:2; display:flex; align-items:center; gap:4px}
+.stepper button{
+  width:32px; height:34px; border:1px solid var(--line-2); background:var(--surface);
+  border-radius:7px; font-size:17px; line-height:1; color:var(--ink-2); padding:0;
+}
+.stepper button:hover{border-color:var(--ink-3); color:var(--ink)}
+.qty{
+  width:52px; height:34px; text-align:center; border-radius:7px;
+  border:1px solid var(--line-2); background:var(--surface-2);
+  font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:15px;
+  font-variant-numeric:tabular-nums; padding:0;
+}
+.qty:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent; background:var(--surface)}
+.row.counted .qty{background:var(--surface); border-color:var(--pine); color:var(--pine-ink); font-weight:600}
+.minmax{
+  grid-column:1/-1; display:none; gap:8px; align-items:center; padding-top:2px;
+  font-size:11.5px; color:var(--ink-3);
+}
+.row.counted .minmax{display:flex}
+.minmax label{display:inline-flex; align-items:center; gap:5px}
+.minmax input{
+  width:44px; height:26px; text-align:center; border-radius:6px; border:1px dashed var(--line-2);
+  background:transparent; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  font-variant-numeric:tabular-nums; padding:0;
+}
+.minmax input:focus{outline:2px solid var(--pine); outline-offset:1px; border-style:solid}
+.minmax .opt{margin-left:auto; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase}
+.empty{padding:34px 18px; text-align:center; color:var(--ink-3); font-size:13.5px}
+
+/* ---------- bottom bar ---------- */
+.bottombar{
+  position:sticky; bottom:0; z-index:5; background:var(--surface);
+  border-top:1px solid var(--line); padding:10px 14px;
+  display:flex; align-items:center; gap:12px;
+}
+.bar{flex:1; display:flex; flex-direction:column; gap:5px}
+.bar .n{
+  font-size:12.5px; color:var(--ink-2); display:flex; justify-content:space-between;
+  font-variant-numeric:tabular-nums;
+}
+.bar .n b{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-weight:600}
+.track{height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden}
+.track i{display:block; height:100%; background:var(--pine); border-radius:3px; transition:width .25s ease}
+@media (prefers-reduced-motion:reduce){ .track i{transition:none} }
+.sendbtn{
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  border-radius:8px; padding:9px 14px; font-size:13.5px; font-weight:600; flex:none;
+}
+.sendbtn:disabled{opacity:.4; cursor:default}
+
+/* ---------- explainer ---------- */
+.explain{width:100%; max-width:760px; display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px}
+.card h3{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--pine); margin:0 0 6px;
+}
+.card p{margin:0; font-size:13.5px; color:var(--ink-2)}
+.card p + p{margin-top:7px}
+.card code{
+  font-family:"IBM Plex Mono",monospace; font-size:12px;
+  background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--ink);
+}
+</style>
+
+<div class="page">
+  <div class="brief">
+    <h1>Shelf Count — interface sample</h1>
+    <p>What staff would see on their phone. Real list: <b>905 products</b> across 12 sections,
+       built from your four POS exports with till buttons, lottery and services stripped out.
+       Stock is the only required field — min and max stay folded away until a count exists.</p>
+    <div class="tagrow">
+      <span class="tag">Sample — no server yet</span>
+      <span class="tag">Entries save on this device</span>
+      <span class="tag">Try it, then tell me what to change</span>
+    </div>
+  </div>
+
+  <div class="demobar">
+    <span class="lbl">Try the recovery</span>
+    <button class="demobtn" id="btn-offline" aria-pressed="false">Go offline</button>
+    <button class="demobtn" id="btn-away">Leave for 20 minutes</button>
+    <button class="demobtn" id="btn-reset">Clear my counts</button>
+    <p class="demonote">Counts are written to the phone the instant you type them, then sent up in the background.
+       Go offline and keep counting — nothing is lost; the pill up top tracks what is still waiting.</p>
+  </div>
+
+  <div class="device">
+    <div class="app" id="app">
+      <div class="appbar">
+        <div class="appbar-top">
+          <h2>Shelf Count<small id="whoami">Scarbro Mart · Thursday count</small></h2>
+          <span class="sync" id="sync" data-state="synced"><span class="dot"></span><span id="synctxt">All sent</span></span>
+        </div>
+        <div class="searchwrap">
+          <span class="ico">⌕</span>
+          <input class="search" id="search" type="search" placeholder="Search name or barcode" aria-label="Search name or barcode" autocomplete="off">
+          <button class="clearsearch" id="clearsearch" hidden aria-label="Clear search">✕</button>
+        </div>
+        <div class="chips" id="chips" role="tablist" aria-label="Sections"></div>
+      </div>
+
+      <div class="resume" id="resume" hidden>
+        <div class="txt"><strong id="resume-title">Back after 20 minutes</strong>
+          <span id="resume-body">Your count was still here. Sending the entries that were waiting.</span></div>
+        <button id="resume-ok">Got it</button>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="bottombar">
+        <div class="bar">
+          <div class="n"><span id="scope-label">Tobacco</span><span><b id="done">0</b> of <b id="total">0</b></span></div>
+          <div class="track"><i id="trackfill" style="width:0%"></i></div>
+        </div>
+        <button class="sendbtn" id="send">Send now</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <div class="card">
+      <h3>Counting is never lost</h3>
+      <p>Each number is written to the phone's own storage as it is typed — before anything
+         touches the network. Closing the tab, losing signal, or a phone that sleeps mid-aisle
+         all resume exactly where the counter left off.</p>
+    </div>
+    <div class="card">
+      <h3>The 20-minute gap</h3>
+      <p>Phones suspend background tabs, so the app does not rely on a live connection.
+         Unsent entries sit in a queue and are flushed when the tab comes back, when the
+         network returns, and on a timer while it is open.</p>
+      <p>Every entry carries its own timestamp, so a late arrival never overwrites a newer count.</p>
+    </div>
+    <div class="card">
+      <h3>Min and max come later</h3>
+      <p>Only <code>stock</code> is asked for on the shelf. The min/max boxes appear under a row
+         once it has a count, and can be left empty — they are far quicker to fill by dragging
+         down a column in the sheet afterwards.</p>
+    </div>
+  </div>
+</div>
+
+<script id="data" type="application/json">{"g":["Tobacco","Vape & Smoke Acc.","Beer & Coolers","Drinks","Chips & Snacks","Candy & Chocolate","Ice Cream & Frozen","Dairy","Grocery","Health & Beauty","Household & General","Electronics"],"p":[["Backwoods port 5 Pack","071610122741",15.0,0,"A"],["BACKWOODS RUM.","071610122772",15.5,0,"A"],["Belmont 20 ks","061900000132",18.5,0,"A"],["Belmont 20 RG","061900101143",18.5,0,"A"],["Belmont KS 25","061900101136",23.0,0,"A"],["Belmont KS 25 Carton","061900001139",173.0,0,"A"],["Belmont RG25","061900101150",23.0,0,"A"],["belmont select 20k","061900138125",18.5,0,"A"],["Belmont Select 25 K Carton","061900038135",173.0,0,"A"],["Belmont select KS","061900138132",23.0,0,"A"],["Belmont select RG 25","061900138156",23.0,0,"A"],["Belmont select small rg 20","061900138149",18.5,0,"A"],["Benson and Hedges Carton","061900200785",180.01,0,"A"],["Benson and Hedges delux 20k","061900103994",18.5,0,"A"],["Benson and Hedges Deluxe KS 20 carton","061900003997",141.0,0,"A"],["Benson and Hedges prime 25","061900000729",23.0,0,"A"],["Blackwood Whissky Tobacco","071610122802",16.95,0,"A"],["CAMEL ORIGINAL KS 20","060100005039",13.75,0,"A"],["Camel select 20","060100045592",13.75,0,"A"],["CAMEL SMOOTH LK","060100045295",16.75,0,"A"],["DRUM ORIGINAL VAPE & CIGARATTE TOBACCO 5","061900060228",44.07,0,"A"],["Drum Premier 50g","061900060235",44.07,0,"A"],["Du Maurier Distinct 20 Ks","059300006120",18.5,0,"A"],["Du Maurier Distinct 20 Rg","05933032",18.0,0,"A"],["Du Maurier Distinct 25 Ks","059300006137",23.0,0,"A"],["Du Maurier signature 20 ks","059300002818",18.5,0,"A"],["Du Maurier signature 20 Rg","05933139",18.5,0,"A"],["Du Maurier Signature 25 k","059300002870",23.0,0,"A"],["Du Maurier Signature 25 Rg","05936631",23.0,0,"A"],["Du Maurier Smooth 20 Ks","059300000203",18.0,0,"A"],["Du Maurier Smooth 20 Rg","05932732",18.0,0,"A"],["Du Maurier Smooth 25 Ks","059300000951",23.0,0,"A"],["Du Maurier Special 20 ks","059300003136",21.75,0,"A"],["EXPORT A FINE","060100009440",21.5,0,"A"],["EXPORT A FINE RG 25","060100009389",21.5,0,"A"],["Export A Full","060100003097",4.99,0,"A"],["FULL KING SIZE 25","060100045844",16.75,0,"A"],["High Tea Blunt Wraps Blueberry","751667206433",3.5,0,"A"],["High Tea Blunt Wraps Mango","751667206037",3.5,0,"A"],["IQOS IIUMA ONE PEBBLE BEIGE","061900497239",57.62,0,"A"],["KING SIZE RAW PAPER","716165280972",3.5,0,"A"],["LD BOLD KS 25","060100037641",16.75,0,"A"],["LD MEDIUM KS 20","060100037795",13.75,0,"A"],["LD SMOOTH KS 25","060100038037",16.75,0,"A"],["LD STANDARD BOLD","060100038631",16.75,0,"A"],["LD Standard Bold KS 20","060100038600",13.75,0,"A"],["MACDONALD ORIGINAL 20 KS","060100035159",15.0,0,"A"],["MACDONALD ORIGINAL 25 KS","060100035180",18.0,0,"A"],["MARLBORO 20","059300061693",15.5,0,"A"],["MARLBORO 25 KS","059300061709",18.75,0,"A"],["MARLBORO SMOOTH","059300063635",15.5,0,"A"],["Match 20","779186002022",11.01,0,"A"],["Match 20 K Carton","779186002039",108.01,0,"A"],["Match 25 K Carton","779186000943",108.01,0,"A"],["Match Chic 20","779186002053",11.01,0,"A"],["Match Chic 20 K","779186002060",108.01,0,"A"],["Match Chic 25 K Caton","779186001001",108.01,0,"A"],["match chic  king size","779186000998",13.75,0,"A"],["match king size","779186000936",13.75,0,"A"],["Matinee mellow KS 25","059300004423",26.0,0,"A"],["Matinee Subtle KS 20","059300010561",21.0,0,"A"],["Matinee subtle KS 25","059300010585",23.73,0,"A"],["Next Extra KS 20 Carton","061900007025",135.0,0,"A"],["Next Extra KS 25 carton","061900007049",140.0,0,"A"],["Next ORIGINAL KS 20","061900107008",14.5,0,"A"],["Next Original KS 20 carton","061900007001",134.99,0,"A"],["Next original KS 25","061900107053",18.0,0,"A"],["Next Original KS 25 carton","061900007056",140.0,0,"A"],["Next original RG 25","061900107138",18.0,0,"A"],["Next SMOOTH KS 25","061900107374",18.0,0,"A"],["Next XTRA KS 20","061900107022",14.5,0,"A"],["Next Xtra KS 25","061900107046",18.0,0,"A"],["Next Xtra Tobacco","061900106919",35.03,0,"A"],["OCB KS","30065505",2.83,0,"A"],["Pall Mall Bold cart.","059300527786",135.04,0,"A"],["PALL MALLSP XL FULL KS","059300062751",17.0,0,"A"],["Philip Morris original 20 ks","061900107213",14.5,0,"A"],["Philip Morris special 20 ks","061900107206",14.5,0,"A"],["Phillies Blunt Chocolate 5 Cigar/Pack","070235629482",13.25,0,"A"],["Phillies strawberry 5pk","070235629512",13.25,0,"A"],["PLAYER 25 RG","05934934",25.88,0,"A"],["PLAYER SMOOTH 25 KS","05935739",25.88,0,"A"],["PLAYERS SMOOTH 20 KS","05934031",20.68,0,"A"],["RAW ROLLING PAPERS 1.1/4 SIZE","716165177319",2.5,0,"A"],["RAW TIPS ROLL","716165179481",2.25,0,"A"],["RW KS PH","716165174219",3.38,0,"A"],["sail classic","061900074003",15.5,0,"A"],["Sail Deluxe Pipe Tobacco 50 g","061900068118",40.0,0,"A"],["TEREA BIRCHA FOR IIUMA 54","061900602220",35.58,0,"A"],["TEREA OAK FOR IIUMA 54","061900602206",35.58,0,"A"],["TOBACCO CAMEL ORIGINAL 25","060100045325",18.53,0,"A"],["Vogue","059300063345",21.0,0,"A"],["ZIG ZAG BLUE","008660100207",3.01,0,"A"],["ZIG ZAG SILVER","008660100405",3.5,0,"A"],["ZIG ZAG WHITE","008660100108",3.5,0,"A"],["Captain Black","24333",2.51,1,"A"],["Captain Black","24332",2.51,1,"A"],["CENTURY SAM","060100004735",10.5,1,"A"],["eagle torchh","853195010503",9.03,1,"A"],["Export A Green Rolling Paper","060100003004",3.25,1,"A"],["Fuzion keepbest","742271563272",19.2,1,"A"],["HAPPY VALEMTINE 6INH","5421578602765",5.64,1,"A"],["nic outt","094922863485",3.38,1,"A"],["OCB premium Black1 1/4\"","30052765",2.0,1,"A"],["Raw 1 1/4\" Black","716165280965",2.99,1,"A"],["RAW CLASSIC","716165174233",2.99,1,"A"],["raw classic 3 pack","716165296867",4.51,1,"A"],["RAW KS","716165177357",3.62,1,"A"],["RAW TIPS","716165177395",2.0,1,"A"],["SLIM OCB","3057068015986",3.38,1,"A"],["Smoke it lighter","853195000542",5.64,1,"A"],["Special Blue","811490251823",9.03,1,"A"],["VB Lighter","705833099633",4.51,1,"A"],["X-LITE","877318100063",3.01,1,"A"],["Xlite lighter","877318001353",2.25,1,"A"],["Zigzag Green","008660100306",3.01,1,"A"],["Zippo Flints","041689200657",3.01,1,"A"],["Arizona Hard 473","056327014930",3.94,2,"A"],["Arizona hard lemon Flavour","056327017801",3.94,2,"A"],["BASK 750","063657042052",15.68,2,"A"],["Black Fly Crushed Orange 473ML","883043001025",4.06,2,"A"],["Black Fly Sour Grape 473ML","883043000837",4.06,2,"A"],["Black Fly Sour Raspberry 473 ML","883043000844",4.06,2,"A"],["BLACK FLY TEQUILA SUNRISE 473ML","883043002336",4.06,2,"A"],["Black Fly Vodka Black Cherry 473ML","883043002763",4.06,2,"A"],["Black fly vodka cranberry 4*400","883043000028",14.0,2,"A"],["Black fly vodka grapefruit 4*400","883043000806",14.0,2,"A"],["blue 473 ml","062067351358",2.93,2,"A"],["Bodacious 1.5l","063657033678",24.69,2,"A"],["Bodacious Smooth Red","063657031773",14.33,2,"A"],["Bodacious smooth red","063657047408",14.33,2,"A"],["bud light 473ml","062067567353",3.49,2,"A"],["Bud light 6 Pack","062067567384",20.78,2,"A"],["budweiser","062067335358",3.49,2,"A"],["Budweisr 710ml","062067335709",5.62,2,"A"],["Budwieser 6pk 473ml","062067335389",20.44,2,"A"],["Busch Bullet","062067423529",6.66,2,"A"],["Busch Ice","062067423222",18.18,2,"A"],["bush ice single","062067376191",3.04,2,"A"],["CAPTAIN MORGAN MANGO MAI TAI 355ML","082000802396",3.49,2,"A"],["carling","056327004146",2.93,2,"A"],["Carling lager","056327016224",17.5,2,"A"],["Clamato Original","065912002801",4.62,2,"A"],["Clamato Spicy","065912002795",4.62,2,"A"],["Coors 6 pack","056327007956",21.02,2,"A"],["coors seltzer 7%","056327025080",4.06,2,"A"],["COORS SELTZER SLUSHIE GRAPE 473ML","056327024069",4.17,2,"A"],["corona 473 ml","062067382338",4.62,2,"A"],["Corona Bottle 6 x 330 ml","062067382413",19.2,2,"A"],["Corona Extra","062067382345",26.09,2,"A"],["Cottage spring pink lemonade 473","051497458348",4.17,2,"A"],["Crown royal whisky cola","082000796855",4.06,2,"A"],["Fax Premium","5741000465684",3.49,2,"A"],["Faxe Amber 473","5741000500057",2.93,2,"A"],["Flying monkey velvet bubble load 473","870766000985",4.62,2,"A"],["Guiness 500 ML","5000213015414",4.92,2,"A"],["guniess 4 pack","083820123609",17.61,2,"A"],["heinekel 6 pack 330ml bottle","072890000033",23.07,2,"A"],["Heineken 500ml","072890000026",4.06,2,"A"],["Heineken 6* 330Ml Bottle","2890000033",19.77,2,"A"],["Heineken 6pk","072890004758",24.17,2,"A"],["Heineken Bottle 330ml","072890000224",3.01,2,"A"],["Honest Lot","048162018495",15.68,2,"A"],["Jackson Triggs 1.5l","063657036563",23.33,2,"A"],["Jackson triggs 750","063657005347",15.03,2,"A"],["JACKSON TRIGGS MERLOT","063657007112",15.03,2,"A"],["jackson-Triggs Pinot Grigio","063657011836",15.03,2,"A"],["james ready 6 473 ml","776029703085",2.95,2,"A"],["Jameson Whiskey Lemonade","080432001424",4.51,2,"A"],["Labatt Blue 6 pack","062067380624",17.52,2,"A"],["Laker Ice 473ML Can","7031000170",2.66,2,"A"],["Laker Ice 6x473ml","620707106586",15.07,2,"A"],["Laker Lager 6*473ML","620707554462",15.81,2,"A"],["Lawenbrau 473","062067860539",2.93,2,"A"],["Lowenbrau 6tc","062067423246",17.52,2,"A"],["Mad Tom IPA","628669010101",4.62,2,"A"],["Maria Christina","063657047378",22.04,2,"A"],["maximum ice 473 ml","062067333538",3.49,2,"A"],["Michelob Ultra","062067547539",25.06,2,"A"],["michelob ultra","062067547355",3.94,2,"A"],["Mikes Hard Blue Freeze","062067379239",4.06,2,"A"],["Mikes Hard Lemonade 473","062067421600",4.06,2,"A"],["Mikes Harder Straw Lemonade","062067427367",4.06,2,"A"],["molson 473 ml","056327073937",3.49,2,"A"],["molson 6 pack","056327007949",20.78,2,"A"],["Molson Canadian 710ml","056327006010",5.5,2,"A"],["Molson Cold shot","056327014145",6.66,2,"A"],["Molson Cold Shots Max","056327024762",3.49,2,"A"],["molson dry 710 ml","056327703414",4.06,2,"A"],["moose head 473 ml","776029701548",3.49,2,"A"],["Moosehead 6*473ML","776029703092",20.89,2,"A"],["Nutrl Blackberry","062067423697",4.4,2,"A"],["Nutrl Grape","062067392771",4.06,2,"A"],["nutrl lemon 473 ml","628055589181",4.06,2,"A"],["old milwaukee 473 ml","056910401338",2.93,2,"A"],["Old Milwaukee 6 pack","056910402540",15.09,2,"A"],["old milwaukee 6PK","056910401345",15.09,2,"A"],["old milwaukee blue 473 ml","056910402502",2.93,2,"A"],["Pabst Blue Ribbon 6 pk","056910414734",17.53,2,"A"],["Red Stripe Lager 6*330ml","698614021278",20.44,2,"A"],["REV PET VODKA BEV 437ML","620213250124",3.49,2,"A"],["Rickards Red 473 ML","056327004948",4.62,2,"A"],["Sapporo 6 pk","056910605064",25.87,2,"A"],["Smirnoff ice berry blast 473","082000785552",4.01,2,"A"],["SMIRNOFF ICE ORIGINAL 473ML","082000773900",3.72,2,"A"],["Somersby 473ML","675325010005",4.06,2,"A"],["Stella Artois 6 x 473ml","062067382161",24.28,2,"A"],["Sun Cruiser","087692023470",4.06,2,"A"],["Tiger Lager 500 ml","086428230502",4.17,2,"A"],["Twisted tea extreme Blue Razz","087692020837",4.01,2,"A"],["Twisted Tea Extreme Lemon","087692024224",4.01,2,"A"],["Twisted tea original 473","087692007470",4.06,2,"A"],["Twisted Tea Part Pack","087692023425",33.89,2,"A"],["Twisted tea pineapple","087692018551",4.01,2,"A"],["White Claw Blackberry 473ML","848819000985",4.06,2,"A"],["White Claw Hard Seltzer Black Cherry 473","848819000008",4.06,2,"A"],["White claw lime 473ml","848819000022",4.06,2,"A"],["White Claw Mango 473ML","848819000015",4.06,2,"A"],["white claw passion fruit","848819000947",4.4,2,"A"],["White Claw surge","848819001654",4.4,2,"A"],["Yellowtail chardonnay","839743000028",17.02,2,"A"],["0ASIS APPLE 300 ML","067311010111",2.0,3,"B"],["7up zero sugar","06547436",4.51,3,"B"],["Air heads soda Watermelon","860013906214",3.11,3,"B"],["Air heads strawberry","860013906221",3.11,3,"B"],["Allens Apple Juice","056412700052",1.01,3,"B"],["allens apple juice","056412503011",4.51,3,"B"],["Allens apple juice 200ml","056412700014",1.0,3,"B"],["Aloa Vera Visvita","718122296545",3.74,3,"B"],["Aloe Vera Mango","8809059293959",3.74,3,"B"],["Aloevera mango","718122298341",3.74,3,"B"],["ALOEVERA ORIGINAL","8809059291986",3.74,3,"B"],["ARIZONA CHERRY LIME RICKEY","613008735012",2.75,3,"B"],["ARIZONA CUCUMBER 680ML","613008745905",3.01,3,"B"],["ARIZONA FRT PUNCH 680UNI","613008766795",2.75,3,"B"],["ARIZONA GREEN TEA-","613008766733",3.74,3,"B"],["ARIZONA ICE TEA WITH RASPBERRY","613008766948",3.01,3,"B"],["ARIZONA ICED TEA WITH LEMON","613008766702",3.01,3,"B"],["ARIZONA MUCHO MANGO","613008766764",2.75,3,"B"],["ARIZONA PEACH","613008766917",3.38,3,"B"],["Arizona Rizzler berry","613008775728",2.99,3,"B"],["ARIZONA WATERMELON 680UNI","613008766856",3.01,3,"B"],["Arizone Tropicsl chillzikle","613008767372",3.74,3,"B"],["ARTIC VIBE","889392001877",5.64,3,"B"],["BRISK 2LT","069000015636",4.51,3,"B"],["Brisk Ice Tea","069000016404",3.38,3,"B"],["Brust Protien Coffee","990309700452",3.62,3,"B"],["Bubly Blueberry","069000161098",3.38,3,"B"],["Bubly Cherry","069000155011",1.85,3,"B"],["Bubly Cherry","069000159958",3.38,3,"B"],["Bubly Grapefruit","069000008294",3.38,3,"B"],["Bubly Lime","069000149171",3.38,3,"B"],["BUBLY MANGO","069000149478",1.85,3,"B"],["Bubly Peach Sparkling Water 355ML","069000158876",1.85,3,"B"],["Canada dry 710","06221010",3.38,3,"B"],["CANADA DRY CAN","06224017",1.5,3,"B"],["CANADA DRY CLUB SODA 2L","06216018",4.51,3,"B"],["carling ice 473 ml","056327263932",3.49,3,"B"],["Celcius Electric Vibe","889392002676",5.64,3,"B"],["CELSIUS PEACH VIBE 330UNI","889392607277",4.51,3,"B"],["CELSIUS TROPICAL 330UNI","889392607239",4.51,3,"B"],["COCA ORIGINAL 355UNI","06782900",1.5,3,"B"],["Coconut milk beverage","628915831504",4.51,3,"B"],["COCONUT WATER 500UNI","055270833773",3.5,3,"B"],["COKE 2L","06742708",4.51,3,"B"],["COKE DIET 2L","06789709",4.51,3,"B"],["COKE DIET 710ML","067000104039",3.38,3,"B"],["COKE ZERO 2L","067000106682",4.51,3,"B"],["COKE ZERO 355UNI CAN","06731906",1.5,3,"B"],["COLA OG 710UNI","067000104022",3.38,3,"B"],["COOL RUNNINGS 500ML","624913000270",2.99,3,"B"],["coors 473 ml","056327183933",3.49,3,"B"],["crus","05660203",2.02,3,"B"],["Crush","05660300",1.5,3,"B"],["CRUSH ORANGE","05660106",1.5,3,"B"],["CRUSH ORANGE 710ML","056000004609",3.38,3,"B"],["del monte mango","067311268376",4.03,3,"B"],["Del monte orange","067311267188",3.96,3,"B"],["diet a and w 2lt","059531001604",4.85,3,"B"],["DIET COKE 355UNI CAN","06792800",1.5,3,"B"],["Dr Pepper 710 ml","054900021092",3.38,3,"B"],["DR PEPPER CAN","05492935",1.75,3,"B"],["DRINKS 2l","069000002612",4.51,3,"B"],["DRINKS 355UNI--","069000004258",1.5,3,"B"],["DRINKS 710ML","069000009840",3.38,3,"B"],["DRINKS 7UP 2LT","06547339",4.51,3,"B"],["DRINKS CRUSH CREAM SODA 2LT","05630804",4.51,3,"B"],["DRINKS CRUSH ORANGE 2LT","05609008",4.69,3,"B"],["DRINKS DR PAPPER 2LT","054900000608",4.51,3,"B"],["DRINKS ZERO SUGAR 710","067000107467",3.94,3,"B"],["Ensure Protein Drink Strawberry","055325004301",3.75,3,"B"],["Ensure Protein Drink Vanilla","055325004288",3.75,3,"B"],["Ensure Protien Drink Chocolate","055325004295",3.75,3,"B"],["Ensure Reg","055325004127",3.74,3,"B"],["Fanta","067000011061",2.11,3,"B"],["Fanta 2l","067000013843",4.51,3,"B"],["FANTA 2L OR","067000011641",5.01,3,"B"],["Fanta 355","067000013737",1.5,3,"B"],["Fanta 710","067000013874",3.62,3,"B"],["fanta can","067000011559",1.5,3,"B"],["Fanta Strawberry 2L","067000013775",4.51,3,"B"],["FIJI 1.5L","632565000234",5.07,3,"B"],["FIJI 500ml water","632565000159",2.5,3,"B"],["FRESCA 2L","06755508",4.51,3,"B"],["FRITR ICED TEA","067311002994",4.51,3,"B"],["FRUITIE FRUIT PUNCH","067311350026",4.51,3,"B"],["fuse","080793793679",1.75,3,"B"],["G CITRON LIME 710UNI","055577421017",3.96,3,"B"],["G COOL BLUE 591UNI","055577420515",3.38,3,"B"],["G COOL BLUE 591UNI","055577420270",2.37,3,"B"],["G COOL CLUE 710UNI","055577421024",3.96,3,"B"],["G FRIU PUNCH 591UNI","055577420263",3.38,3,"B"],["G FRIUT PUNCH 710UNI","055577421000",3.96,3,"B"],["G ORANGE 591UNI","055577420249",3.5,3,"B"],["G ZERO BERRY","057271162647",3.38,3,"B"],["G ZERO BERRY 591UNI","057271162609",3.38,3,"B"],["G ZERO GLACIER FREEZE","057271164122",3.38,3,"B"],["G ZERO LEMON LIM E 591UNI","057271162586",3.38,3,"B"],["G ZERO ORANGE 591UNI","057271162562",3.38,3,"B"],["G-ZERO LIME 591UNI","055577420232",3.5,3,"B"],["G2 FRUIT PUNCH 591UNI","055577420935",3.5,3,"B"],["G2 ORANGE 591UNI","055577420928",3.5,3,"B"],["Gatorade","057271165044",3.5,3,"B"],["Gatorade","057271555845",3.5,3,"B"],["GATORADE G2 GRAPE 591UNI","055577420942",3.38,3,"B"],["Great Value 500ml Water","605388881243",1.0,3,"B"],["laker ice black 473 ml","070310001707",2.93,3,"B"],["laker lager 473 ml","070310001578",2.93,3,"B"],["Laker red","620707101970",2.93,3,"B"],["Maison Perrier","055000216500",2.25,3,"B"],["MOJI LIGHTER","853195000535",8.19,3,"B"],["Monster Energy drink","070847900177",4.51,3,"B"],["MONSTER ORIGINAL","070847811190",4.51,3,"B"],["MONSTER ULTRA PEACHY KEEN","070847890720",4.51,3,"B"],["MONSTER ULTRA ZERO","070847015208",4.51,3,"B"],["MONSTER ZERO SUGAR","070847002901",4.51,3,"B"],["Mug Root Beer 355ml","069000040508",1.5,3,"B"],["NAYA 1.5L","057379121058",3.0,3,"B"],["Naya 500 ml","057379105010",1.5,3,"B"],["NAYA 600ml","057379600119",1.75,3,"B"],["Nestea","990484000101",2.5,3,"B"],["NESTEA LEMON 355ML","990484000071",1.5,3,"B"],["NESTLE 1L","068274000072",3.0,3,"B"],["Oasis Apple Grape Juice","067311016991",1.5,3,"B"],["Oasis Apple Juice","067311010999",1.5,3,"B"],["OASIS ORANGE 300 ML","067311020110",2.0,3,"B"],["Oasis Orange Juice","067311018995",1.5,3,"B"],["PEACE TEA PEACH","06766407",2.25,3,"B"],["PEACE TEA RASPBERRY","06766504",2.25,3,"B"],["PEACE TEA SNO BERRY","06787303",2.25,3,"B"],["Peach Tea Peach","2437606766407",2.25,3,"B"],["Pepsi Diet 710 ml","069000010662",3.39,3,"B"],["Pepsi zero","069000013830",3.38,3,"B"],["pine apple burst","067311680284",4.03,3,"B"],["POP SHOP BLACK CHERRY","180009000017",2.51,3,"B"],["POP SHOP COTTON CANDY,GUMS & CHOCOLATES","180009000338",2.51,3,"B"],["POP SHOP CREAM SODA","180009000031",2.51,3,"B"],["POP SHOP LIME","180009000024",2.51,3,"B"],["POWER ADE FRUIT PUNCH","06748605",3.94,3,"B"],["POWER ADE MELON PINEAPPLE","06748809",3.38,3,"B"],["POWER ADE MIX BERRY","06748508",3.94,3,"B"],["POWER ADE ORANGE","06748702",3.38,3,"B"],["powerade zero blue","06794604",3.94,3,"B"],["powerade zero punch","067000011887",3.94,3,"B"],["PREMIER PROTEIN VANILLA 325ML","643843714828",3.74,3,"B"],["Pwrd","06748906",3.94,3,"B"],["RED BULL 250 original","180854000101",4.01,3,"B"],["RED BULL 355 UNI","180854000507",4.24,3,"B"],["RED BULL 473 UNI","180854000774",6.5,3,"B"],["RED BULL SUGAR FREE 250 UNI","180854000309",4.01,3,"B"],["RED BULL SUGAR FREE 355 UNI","180854000606",4.24,3,"B"],["Schweppers Ginger ale","016600000760",3.38,3,"B"],["SCHWEPPES 2LT","016600000395",4.85,3,"B"],["SMART WATER 591ML Water","786162650351",3.0,3,"B"],["soda club","06224318",1.5,3,"B"],["Solid Vibe","990312906964",4.51,3,"B"],["Solid Vibe","990312906971",4.51,3,"B"],["Solid Vibe","990312906957",4.51,3,"B"],["SPRITE 2L","06750600",4.51,3,"B"],["SPRITE 710 ML","067000104015",3.38,3,"B"],["SPRITE CAN","06793207",1.68,3,"B"],["sprite zero sugar","067000110573",4.85,3,"B"],["Steam Whistle","702915003014",4.51,3,"B"],["stella 473 ml","062067382178",3.94,3,"B"],["SUNNY D ORANGE ST","050200013003",2.25,3,"B"],["SUNNY TANGY ORIGINAL","050200012976",2.25,3,"B"],["ting sparkling grape fruit","858629001065",2.75,3,"B"],["TONIC WATERMELON","613008771300",3.74,3,"B"],["Twisted Tea","087692011248",4.51,3,"B"],["Vita coconut waster 330ml","898999000022",2.81,3,"B"],["Water kirkland","096619321841",1.0,3,"B"],["80 GM KABOOM","757528050832",2.25,4,"B"],["all dressed 60g","060410048665",2.7,4,"B"],["ALl dresssed CHIPS & SNACKS","060410047231",6.2,4,"B"],["BBQ CHIPS & SNACKS","060410047262",6.22,4,"B"],["big daddy bisc","626233743202",3.11,4,"B"],["Cheetos puffs","060410020197",1.13,4,"B"],["Dare Mallow","055653435006",3.96,4,"B"],["Diritos Nacho 70g","060410048474",2.7,4,"B"],["DOR BLD BBQ 235G","060410054383",6.09,4,"B"],["DOR COL RNC 235G","060410054468",6.22,4,"B"],["DOR NCH CHS","060410054406",6.09,4,"B"],["DOR SWT CHL 235G","060410054420",6.09,4,"B"],["DOR ZSTY CH 235G","060410054444",6.09,4,"B"],["Doritos nacho","060410020203",1.13,4,"B"],["EXCEL POLAR","064900000447",2.5,4,"B"],["FL MISS VICKIES SPICY DILL P","060410053317",6.2,4,"B"],["FL OVEN BAKED BBQ 177G","060410061084",6.09,4,"B"],["FL RUFFLES REGULAR","060410047224",6.22,4,"B"],["HARIBO GOLD BEARS 150G","4001686396452",3.94,4,"B"],["ket","060410042526",2.47,4,"B"],["La Petite Danish","055598622103",2.83,4,"B"],["Lady Sarah Hazel Nut","063517038713",3.72,4,"B"],["LADY SARAH Strawberry","063517038720",3.72,4,"B"],["Lays","060410080078",5.64,4,"B"],["LAYS BAR BQ 28G","060410009673",1.13,4,"B"],["lays classic","060410050910",1.13,4,"B"],["LAYS CLASSIC 235G","060410047019",5.64,4,"B"],["Lays Classic 60g","060410048603",2.7,4,"B"],["LAYS DILL PICKLE 220GM","060410079393",5.64,4,"B"],["Lays Hot N Sweet","060410080054",5.64,4,"B"],["lays kechup big 220g","060410079430",5.64,4,"B"],["LAYS LIGHTLY SALTED 235G","060410047118",6.09,4,"B"],["LAYS MAGIC MASALA 200GM","060410079980",5.64,4,"B"],["Lays Small Ketchup","060410025987",1.13,4,"B"],["LAYS WAVY ORIGINAL 235G","060410047040",6.09,4,"B"],["Little Hearts","8901063136250",2.25,4,"B"],["Miss Vickies Origianl 55g","060410071830",2.7,4,"B"],["MISS VICKIES SOUR CREAM & ONION","060410073773",6.09,4,"B"],["MISS VICKS SEA SALT 55G","060410901656",3.04,4,"B"],["original CHIPS & SNACKS","060410046678",6.2,4,"B"],["Pringles All Dressed","064100147973",5.64,4,"B"],["PRINGLES BBQ","064100111370",5.64,4,"B"],["Pringles BBQ 68g","064100119352",3.01,4,"B"],["PRINGLES HOT ONES 156G","064100150546",4.51,4,"B"],["Pringles Masala","064100159396",5.64,4,"B"],["Pringles Origianl 67g","064100852617",3.01,4,"B"],["PRINGLES ORIGINAL","064100111332",5.64,4,"B"],["PRINGLES SALT & VINEGAR","064100111417",5.64,4,"B"],["Pringles Sauce chilly","064100159372",5.64,4,"B"],["PRINGLES SOUR CREAM& ONION","064100111356",5.64,4,"B"],["Pringles Spicy hot pot","064100159433",5.64,4,"B"],["Real Kimchi Noodle","8801052043661",4.51,4,"B"],["regular CHIPS & SNACKS","060410047217",6.2,4,"B"],["RUFFELS CREAM ONION 28G","060410055076",1.13,4,"B"],["Ruffles","060410021842",1.13,4,"B"],["RUFFLES CHEDDAR & SOUR CREAM","060410075098",6.09,4,"B"],["salt nd vinegar lays","060410079478",5.64,4,"B"],["Sea salt & malt vinegar","060410046715",6.22,4,"B"],["Smart food","060410029886",6.09,4,"B"],["SMARTFOOD MOVIE NIGHT BUTTER","060410029909",6.22,4,"B"],["Smartfood White Cheddar 45g","060410006139",2.7,4,"B"],["Sour cream & BaconCHIPS & SNACKS","060410047255",6.09,4,"B"],["Sour cream & Onion CHIPS & SNACKS","060410047248",6.22,4,"B"],["sour cream and onion small","060410047644",2.7,4,"B"],["Sour Cream Onion 68g","064100852624",3.01,4,"B"],["TAKIES BLUE HEAT","757528051143",4.51,4,"B"],["TAKIS FUEGO 260GM","757528052935",4.51,4,"B"],["Takis int. nacho","757528050511",4.51,4,"B"],["Uncle Rays BBQ CHIPS & SNACKS 130g","614156061527",2.83,4,"B"],["Uncle Rays potato CHIPS & SNACKS 130g","614156061503",2.83,4,"B"],["Uncle Rays Ripple 130g","614156061510",2.83,4,"B"],["VAGGIE ORIG.","829515301378",4.51,4,"B"],["VEGGIE ORIGINAL","829515308582",4.28,4,"B"],["ZESTY RANCH","829515324629",5.64,4,"B"],["5 gum acsent","064900227035",3.49,5,"B"],["5 gum cobalt","064900408403",3.38,5,"B"],["5 gum flood","064900429170",3.49,5,"B"],["5 gum prism","064900423987",3.38,5,"B"],["5 gum rain","064900408380",3.49,5,"B"],["AIRHEAD 15.6G CHERRY","073390002015",0.61,5,"B"],["AIRHEADS 15.6G BLUE RASPBERRY","073390002206",0.6,5,"B"],["AIRHEADS 15.6G WATER MELON","073390002039",0.99,5,"B"],["airheads sour","073390016463",0.75,5,"B"],["BABY DIPPER SOUR  38G","060631932507",2.81,5,"B"],["CADBURY CARAMILK","06105422",2.5,5,"B"],["CADBURY CRUNCHIE","061200225952",2.25,5,"B"],["Caramilk","06109224",2.25,5,"B"],["CRY BABY","059642370019",2.0,5,"B"],["Cry Baby Assorted Gum Balls 36g","059642340012",1.75,5,"B"],["Dairy Milk 38g","061200018424",2.5,5,"B"],["DAIRY MILK FRUIT & NUT 38GM","061200018448",2.5,5,"B"],["Dentyne Ice","073390055615",2.25,5,"B"],["DENTYNE ICE SPEARMINT 12 PCS","073390055875",2.25,5,"B"],["Double Bubble","05964253",0.28,5,"B"],["Double Bubble Gum Balls 36g","059642340005",1.75,5,"B"],["DUBBLE BUBBLR 6PCS","059642370002",2.0,5,"B"],["EXCEL","064900000324",2.5,5,"B"],["Excel spearmint 12 pc singkles","064900000317",2.5,5,"B"],["excel white bubble gum gum","064900409554",2.5,5,"B"],["FERRERO ROCHER","06202945",3.24,5,"B"],["Fishermans Friend","05899753",3.96,5,"B"],["Halls cherry flavour sugarfree","057700229958",2.54,5,"B"],["HALLS EXTRA FORT","057700212752",2.54,5,"B"],["halls honey lemon","057700628805",2.54,5,"B"],["halls regular","057700229972",2.5,5,"B"],["halls vitamin c citrus","057700853863",2.54,5,"B"],["HERSHEYS COOKIES & CRACKERS N CREME S","06811307",3.24,5,"B"],["HERSHEYS MILK CANDY,GUMS & CHOCOLATES","05663135",3.24,5,"B"],["HUBBA BUBBA MX ORI","064900000881",2.81,5,"B"],["Huer CANDY,GUMS & CHOCOLATES Cup Gummy 1","771047240017",4.51,5,"B"],["ice vbreakers berry splash","06884701",3.94,5,"B"],["JACK LIKS PEPPRONI 22G","017082879035",1.5,5,"B"],["JACK LIKS PEPPRONI 22G HOT","017082879011",1.57,5,"B"],["juicy fruit original","064900409653",2.5,5,"B"],["KINDER BUENO","062020000682",3.38,5,"B"],["Kinder Chocolate","06202343",1.99,5,"B"],["KINDER EGG","06202644",2.54,5,"B"],["KOOL-AID LOLLIPOP DIPPERS","083933232878",3.38,5,"B"],["M & M CANDY,GUMS & CHOCOLATES 48G","058496812317",2.81,5,"B"],["M & M PEANUT 49G","058496812324",2.81,5,"B"],["M&M MILK CHOC 87.9G","040000497523",3.38,5,"B"],["MARS","058496328733",2.49,5,"B"],["MAYNARDS FUZZY PEACH 64G","057700215876",2.5,5,"B"],["MAYNARDS SOUR PATCH KIDS 60G","057700221921",2.5,5,"B"],["MEMTOS MINT","073390000110",2.25,5,"B"],["Mentos fruit","073390000165",2.25,5,"B"],["NERDS GRAPE 46.7G","079200370107",2.5,5,"B"],["NERDS GUMMY CLUSTERS 142G","079200066369",5.64,5,"B"],["NESTLE AERO","059800000116",2.5,5,"B"],["NESTLE AERO MINT","059800523110",2.5,5,"B"],["NESTLE GENERAL ITEMS CRISP","059800000215",2.5,5,"B"],["NESTLE KIT KAT","05980331",2.25,5,"B"],["NESTLE SMARTIES","05986034",2.25,5,"B"],["Nutella Bread Sticks","062020050526",3.94,5,"B"],["Peel Pop","850079218710",3.38,5,"B"],["Peel pop","850079218642",3.38,5,"B"],["Peel Pop","850079218673",3.38,5,"B"],["Peel pop","850079218666",3.38,5,"B"],["Peel Pop","850079218703",3.38,5,"B"],["Peelrrz","667888590582",3.94,5,"B"],["REESES 3 CUP","056600793217",2.25,5,"B"],["RING POP","041116005190",1.5,5,"B"],["RXBAR","859162007583",2.5,5,"B"],["RXBAR","859162007606",2.5,5,"B"],["RXBAR","24435",2.5,5,"B"],["RXBAR","859162007620",2.5,5,"B"],["SESAME SNAPS","872590000155",1.13,5,"B"],["SKITTLES ORIGINAL 61G","058496829605",2.5,5,"B"],["SKITTLESSOUR 51G","058496894917",2.5,5,"B"],["SNICKERS","058496422394",2.5,5,"B"],["tic tac freshmint","062020005618",2.54,5,"B"],["tic tac fruit","062020005649",3.01,5,"B"],["TWIX","058496352776",2.25,5,"B"],["WRIGLEYS DOUBLE MINT","064900409677",3.72,5,"B"],["BEN & JERRY HALF BAKED","058779142759",10.16,6,"B"],["BEN & JERRY SALTED CARAMEL ALMOND","058779142728",9.03,6,"B"],["Ben & Jerry- CANDY,GUMS & CHOCOLATES chi","058779142803",11.29,6,"B"],["BN CANDY,GUMS & CHOCOLATES FUDGE BROWNIE","058779142773",10.16,6,"B"],["CANDY,GUMS & CHOCOLATES raspberry truffl","055000205702",10.16,6,"B"],["chuny monkey","058779144524",10.16,6,"B"],["DRUMSTICK VANILLA CARAMEL","055000563512",4.28,6,"B"],["DRUMSTICK VANILLA FUDGE","055000563529",4.28,6,"B"],["Haagen Dazs","055000201827",10.16,6,"B"],["Haagen Dazs","055000205542",10.16,6,"B"],["HAAGEN DAZZ VANILLA ALMOND","055000205320",5.41,6,"B"],["HAAGEN DAZZ VANILLA MILK","055000205306",5.41,6,"B"],["Haiegendas Choc","055000205665",10.16,6,"B"],["ICEMAN ICE","694208000278",4.51,6,"B"],["kit kat double crunch","055000209120",3.94,6,"B"],["Mega Sandwich","774276118126",2.25,6,"B"],["Melona Icecream","8801104943635",2.81,6,"B"],["Melona strawberry","8801104948418",2.81,6,"B"],["mr.freeze","064331757309",1.01,6,"B"],["Nestle drumstick CANDY,GUMS & CHOCOLATES","055000174534",4.51,6,"B"],["Nestle drumstick salty caramel","055000174589",4.51,6,"B"],["Nestle drumstick strawberry","055000174565",4.51,6,"B"],["Nestle oreoASSORTED SANDWICH single","060000610203",3.94,6,"B"],["NESTLE VANILLA CAKE","055000681728",2.25,6,"B"],["Parlour Juice Pop","05506101",1.75,6,"B"],["parlour Pop Mango","05506208",1.75,6,"B"],["POPSICLE LIFE SAVER","055000600460",3.15,6,"B"],["20 INCH FOIL","057351222230",4.51,7,"B"],["Coffee Cream 1L","064420002389",4.99,7,"B"],["NESTLE BUTTERSCOTH SUNDAE","055000892964",7.5,7,"B"],["Nestle Parlour French Vanille","055000893008",7.5,7,"B"],["Nestle Parlour Vanilla","055000893053",7.5,7,"B"],["sealtest 2%","064420000798",3.99,7,"B"],["SEALTEST 3.25% 1L","064420000224",4.51,7,"B"],["SEALTEST CANDY,GUMS & CHOCOLATES MILK 47","064420201713",2.25,7,"B"],[",R.GENERAL ITEMSS SPICY CHICKEN KIMCHI","059491002819",2.0,8,"B"],["Advil 10 Tablets","062107004015",5.99,8,"B"],["Aluminum Foil","806712305019",3.38,8,"B"],["Arm and Hammer Baking soda","065333001100",2.99,8,"B"],["Axe 48H","079400412935",4.99,8,"B"],["axe appoloo","7791293041100",6.77,8,"B"],["Bounty plus","030772201565",4.51,8,"B"],["Brioche Bun","059243002302",4.5,8,"B"],["BULDUK SPICY CHIKEN 105 G","8801073210363",3.94,8,"B"],["BULDUK SPICY RAMEN 105 G","192699000987",4.01,8,"B"],["Carnation evaporated Milk 354ml","059000003115",2.99,8,"B"],["Catch master","029049006101",6.77,8,"B"],["Chap Ice","008130010128",6.0,8,"B"],["Chcken Vienna Sausages 130g","05527241",2.5,8,"B"],["CHOCC","06796038",2.5,8,"B"],["Christie Chips Ahoy","066721006233",4.5,8,"B"],["CL CHUNK LIGHT TUNA","061362434704",3.99,8,"B"],["Cling Wrap","067489106371",5.64,8,"B"],["Clorox","055500017294",6.77,8,"B"],["Cockroach trap","063252391913",2.25,8,"B"],["Colgate Brush","058000309166",3.38,8,"B"],["Cranberry juice Original 1.89l","031200445261",6.77,8,"B"],["Craze chocolays","777550513471",5.19,8,"B"],["Delicious kitchen coconut water","628915831481",2.25,8,"B"],["DEMPSTERS WHITE","068721002222",3.5,8,"B"],["Dippity","067545029217",6.0,8,"B"],["Downy softner","030772100332",11.29,8,"B"],["egg burnbrae 12","065651000052",4.99,8,"B"],["ensure 50%less sugar","055325002178",3.75,8,"B"],["Ensure drink","055325004011",3.75,8,"B"],["Eska","671785100034",3.01,8,"B"],["Febreze air mist","030772030868",7.35,8,"B"],["frenchs ketchup","056200926466",5.99,8,"B"],["Friskie turkey and Giblets Dinner 156g","056366115797",2.47,8,"B"],["Friskie turkey Dinner 156g","056366115773",2.0,8,"B"],["FRISKIES CHEFS DINNER","056366006965",1.68,8,"B"],["FRISKIES CHICKEN & SALMON DINNER","050000161867",2.0,8,"B"],["FRISKIES CHICKEN DINNER","056366006866",1.68,8,"B"],["FRISKIES CHICKEN DINNER IN GRAVEY","056366006729",1.68,8,"B"],["FRISKIES OCEAN WHITEFISH TUNA","056366006897",1.68,8,"B"],["FRISKIES SALMON DINNER","056366006903",2.0,8,"B"],["FRISKIES SEAFOOD SUPREME","056366006989",2.0,8,"B"],["FRISKIES TURKEY & CHEESE DINNER","050000150779",2.0,8,"B"],["Fujian Black tea","6901118888013",2.99,8,"B"],["Glue snare","6953937164014",4.51,8,"B"],["Hellmans Mayo 340 ML","068400508656",9.03,8,"B"],["Hello Panda","072320700403",1.13,8,"B"],["IP PASTA","068062021746",4.99,8,"B"],["Jumbo Hamburger Bun","055742576344",6.2,8,"B"],["Kalas sea salt","061308400107",2.99,8,"B"],["Kikkoman Soy Sauce","041390001055",9.03,8,"B"],["Kirkland Tissue","096619960095",10.16,8,"B"],["Lancia Fusilli","064200130585",2.5,8,"B"],["Large Trey","055966900321",5.09,8,"B"],["Lays 200g","060410079942",5.64,8,"B"],["Luncheon Meat 340g","623190810404",3.5,8,"B"],["Margerine","059950300159",5.0,8,"B"],["Maxwell Original","066188004698",8.99,8,"B"],["MENTOS CINNAMONSTAIN SOFT BATHROOM TISSU","771913677282",3.38,8,"B"],["Milano Giant Lady Biscuts","062858101209",4.51,8,"B"],["Mr GENERAL ITEMS chicken","059491002505",2.0,8,"B"],["Mr GENERAL ITEMS pack beef","059491000358",1.0,8,"B"],["Mr GENERAL ITEMS pack chicken","059491000501",1.0,8,"B"],["Mr GENERAL ITEMS pack spicy chicken","059491000778",1.0,8,"B"],["Mr GENERAL ITEMS spcy chicken","059491002550",2.0,8,"B"],["MR. GENERAL ITEMSS SPICY BEEF","059491000785",1.0,8,"B"],["Munchies peanuts","060410074848",2.25,8,"B"],["Nescafe","055000489256",9.99,8,"B"],["Nescafe Gold","055000383998",13.0,8,"B"],["Nescafe Rich","055000008815",9.5,8,"B"],["NESCAFE RICH 100GM","055000008839",11.29,8,"B"],["Nongshim Spicy Chicken Bowl GENERAL ITEM","031146250301",2.81,8,"B"],["Oasis Red Grape","067311241218",2.0,8,"B"],["OCEAN SPRAY CANNEBERY","031200046079",5.99,8,"B"],["Old dutch","063474104179",5.64,8,"B"],["Oreo Golden","066721026613",4.5,8,"B"],["Oreo Puffs","628154458197",5.5,8,"B"],["OREO THE ORIGINAL 270G","066721026590",4.99,8,"B"],["ORVILLE BUTTER","058807489092",1.69,8,"B"],["ORVILLE EXTRA BUTTER","058807485247",1.99,8,"B"],["Pabst","056910406418",2.93,8,"B"],["Pall Mall bold","059300027781",14.5,8,"B"],["PALL MALL BOLD KS25","059300027798",18.0,8,"A"],["PALL MALL FULL KS 20","059300024766",14.5,8,"B"],["PALL MALL FULL RG 20","059300024742",14.5,8,"B"],["PALL MALL FULLM KS","059300024773",18.0,8,"A"],["PALL MALL SMOOTH KS 20","059300024803",14.5,8,"B"],["PALL MALL SMOOTH KS RG","059300054879",18.0,8,"A"],["PALL MALL SMOOTH RG 20","059300024780",14.5,8,"B"],["PALL MALL SPECIAL XL FULL 20","059300053339",14.5,8,"B"],["PALLMALL SMOOTH KS25","059300024810",18.0,8,"A"],["PASSION FLAKIE","06797231",2.81,8,"B"],["PC Club soda","060383125189",4.51,8,"B"],["Pepto Bismol 100ML","301490002674",7.0,8,"B"],["Plates","055966913109",5.64,8,"B"],["Primo Elbows 454g","055900000346",2.5,8,"B"],["Primo Spaghettini","055900000322",2.5,8,"B"],["primo thick and zesty","055900006621",3.5,8,"B"],["PRINGLES PIZZA","064100111431",5.64,8,"B"],["Pure air","806712305286",3.38,8,"B"],["Pure air","806712310396",3.38,8,"B"],["Pure clean dish washing solution","806712307839",3.38,8,"B"],["Pure klean","806712314905",3.38,8,"B"],["Qtips small","305219051004",4.99,8,"B"],["Redpath sugar","062847210233",5.5,8,"B"],["Redpath sugar cubes","062847814363",4.99,8,"B"],["Rougemont Apple juice 2L","067311010029",5.65,8,"B"],["Saniblend Cleaner","834605003834",16.94,8,"A"],["Shakti Coconut oil","828158272557",9.99,8,"B"],["SIFTO FALT","067568110800",2.99,8,"B"],["Small Trey","055966900291",2.83,8,"B"],["Snuggle air freshner","087399590954",3.38,8,"B"],["Soy Sauce","667888242337",2.5,8,"B"],["Strongmore Aluminium Foil","806712305026",6.77,8,"B"],["Tetley Green Tea","057174024417",4.99,8,"B"],["Tetley Orange Pekoe","057174122137",5.99,8,"B"],["Tide","030772188460",7.9,8,"B"],["Tide","030772176351",9.03,8,"B"],["Tide detergent","6903148078884",4.51,8,"B"],["Tide detergent","030772176344",9.03,8,"B"],["Tide Original 1L","030772121191",12.42,8,"B"],["Tim Hortons","063209082277",15.99,8,"A"],["Tonkotsu","031146056262",4.52,8,"B"],["TWINKIES","777550011649",2.5,8,"B"],["Tylenol extra carry on","062600141118",6.0,8,"B"],["Uni blue air freshner","6287508115564",4.51,8,"B"],["UNICO VEGITABLE OIL 3LT.","067800001026",11.99,8,"B"],["Venice shot glass","069237012408",4.51,8,"B"],["Visine original","060245405350",9.0,8,"B"],["WD-40","061536012721",11.29,8,"B"],["Wellson duct tape","063252385387",3.38,8,"B"],["Wellson insulation tape","063252385462",3.38,8,"B"],["Wellson painters tape","063252385554",3.38,8,"B"],["Whiskas Seafood 670g","058496433215",9.03,8,"B"],["Wild pard shoe polish","698931001427",4.51,8,"B"],["Wild pard shoe polish","698931001434",3.38,8,"B"],["Wild Pink Salmon","065302000035",5.99,8,"B"],["Windsor Table Salt","066010001055",2.99,8,"B"],["10 SUPER FORT","627792003264",3.38,9,"B"],["ALL ONE SIZE","806712311454",4.51,9,"B"],["Axe Apollo","079400264411",6.77,9,"B"],["Axe Epic fresh","7791293050638",6.77,9,"B"],["Axe Phonix","079400550200",6.77,9,"B"],["Band-aid","381370047544",3.38,9,"B"],["BIC 5T","3086125705027",6.77,9,"B"],["BIC BIG LIGHTER","3086120600020",2.83,9,"B"],["bic small","07033245",2.25,9,"B"],["BLISTEX REGULAR","041388220611",3.94,9,"B"],["BOUNCE 15","037000958604",4.51,9,"B"],["brownies mega","060737739314",2.81,9,"B"],["BUTANE G","059136991447",6.77,9,"B"],["Chapstick","062107817417",4.51,9,"B"],["CLASSIC DOUBLE EDGE BLADES","074809903008",4.51,9,"B"],["colgate 95 ml","058000313194",3.38,9,"B"],["COMPOSTABL3E BIRCH FORKS 24","059212314153",4.51,9,"B"],["Conrstarch Baby Powder","060383157814",9.03,9,"B"],["Cotton Swabs","806712307785",2.83,9,"B"],["Dove Hair Spray Extra Hold","079400209832",11.29,9,"B"],["Dove Men care shampoo","079400469267",10.16,9,"B"],["Dove Shampoo","079400677297",10.16,9,"B"],["Du-Rag","698931001885",4.51,9,"B"],["DURACELL 2 PACK","041333215013",4.51,9,"B"],["Duracell AA4","041333415017",9.03,9,"B"],["Duracell AAA2","041333224015",4.51,9,"B"],["Duracell AAA4","041333424019",9.03,9,"B"],["Durag","829534916218",4.51,9,"B"],["Equate Nail Polish Remover","627735010373",6.5,9,"B"],["FEBEZE MEDITERRANEAN LAVENDER","037000962649",7.9,9,"B"],["Gain laundry liquid","037000769545",11.29,9,"B"],["GAIN ORIGINAL DRYER SHEET","037000823650",5.64,9,"B"],["GARBAGE BAGS","825096000150",2.81,9,"B"],["Garnier Fructis Shampoo","603084491254",7.9,9,"B"],["Gillette Series","047400662209",9.03,9,"B"],["Gillette shaving foam 49gm","065513197661",2.25,9,"B"],["Glass rose","5421578602741",4.51,9,"B"],["Global Beauty Care Wipes","814655029749",7.9,9,"B"],["Gravol easy to swallow","058738325513",7.9,9,"B"],["Habibi Pre rolled tip","788413295601",4.51,9,"B"],["HOT RIDER","070907298558",3.38,9,"B"],["JUMBO COTTON BALLS","059338125077",2.25,9,"B"],["Lesalon Cosmetic pads","061541478116",2.54,9,"B"],["Lesalon nail clipper","061541046056",3.38,9,"B"],["LETS PARTY 24","062823450493",2.81,9,"B"],["Lip Medex","04138891",4.51,9,"B"],["Lovu cotton swabs","059338134666",4.51,9,"B"],["Lsta mint chill","814724020141",2.5,9,"B"],["Magnum","061700912208",4.51,9,"B"],["Meta pipe 50","088169002554",5.64,9,"B"],["NIBO BUTANE 162G","061740110121",5.64,9,"B"],["Nivea Men Boost Shower Gel","056594018679",10.16,9,"B"],["Nivea Men Shower Gel","056594008632",10.16,9,"B"],["Nivea men Shower Gel","056594010130",10.16,9,"B"],["Noorani Hanna","813107000022",6.77,9,"B"],["Noorani Hanna","813107000015",6.77,9,"B"],["PAMOLIVE 828UNI","035000463036",4.51,9,"B"],["Panasonic AA4","073096500235",3.38,9,"B"],["Panasonic AAA4","073096500273",3.38,9,"B"],["Pantene","080878044481",9.03,9,"B"],["Pur-est Cotton swab","806712309116",2.83,9,"B"],["Pur-est liquid soap","806712304708",4.51,9,"B"],["Pur-est liquid soap","806712306870",4.51,9,"B"],["Q-tips cotton swabs","065656913500",5.64,9,"B"],["RAID ANT,ROACH & EARWIG","062300017256",14.68,9,"B"],["RAW CLASSIC CONES","716165177111",4.51,9,"B"],["reactine EXTRA STRENGTH","060245250035",7.9,9,"B"],["RONSON","059136991423",5.64,9,"B"],["royal","063435704073",4.85,9,"B"],["ROYAL OAK CHARCOAL LIGHTER 946UNI","016800233005",6.77,9,"B"],["ROYAL SCRUB","063920019347",3.04,9,"B"],["SBK Knee support","6939535768113",4.51,9,"B"],["SCOTTIES","061328805036",2.54,9,"B"],["SKITTLES GUMMIES ORIGINAL 57G","058496460785",2.25,9,"B"],["Softsoap Body Wash","074182473518",7.9,9,"B"],["SOS 10 PADS","067029931012",3.38,9,"B"],["Spa Soap","852474166313",4.51,9,"B"],["speed stick","022200940214",6.77,9,"B"],["SPEED STICK COOL CLEAN","022200940252",6.77,9,"B"],["TABLE ACCENT PLASTIC TEASPOON","055966908143",3.38,9,"B"],["TABLE ACCENTS 15 PAPER PLATES","055966913062",3.96,9,"B"],["TABLE ACCENTS FORKS","055966908129",2.59,9,"B"],["TANG ORANGE","066188055300",4.51,9,"B"],["tide og 1 litre","030772121207",12.42,9,"B"],["TMPR Hydrogen Peroxide","757350671519",4.51,9,"B"],["Trojan classic","061700930509",4.51,9,"B"],["Trojan naked","061700915445",4.51,9,"B"],["TUFF GUYY 40 STRONG GARBAGE BAGS","055966994436",9.03,9,"B"],["TWEEZERS","071603529007",3.49,9,"B"],["Tylenol Extra strength ez tabs","064541301378",9.03,9,"B"],["VASELINE BLUESEAL","60014399",3.38,9,"B"],["VASELINE UV 100 ML","8901030669125",4.51,9,"B"],["WINDEX ORIGINAL","059200807704",7.9,9,"B"],["Xtricity light bulb clear 60 watts","621139639024",3.38,9,"B"],["ZIPPO FLUID 355ML","041689301224",13.55,9,"B"],["25D Lighter","705833099671",1.7,10,"B"],["Aluminium Foil","059212997622",5.64,10,"B"],["Bandage","806712311461",3.38,10,"B"],["Bandage","806712311553",3.38,10,"B"],["BANDANA","825096001904",3.38,10,"B"],["BICYCLE PLAYING CARDS","060549008080",4.51,10,"B"],["BLUE BEER CUP","059212710023",3.22,10,"B"],["bounce 34","037000823322",5.64,10,"B"],["BRASS LOCK 25MM","063252363729",3.5,10,"B"],["bubbly mango","69000159361",2.59,10,"B"],["Cheerios","065633234512",5.5,10,"B"],["Clorox","055500017287",6.77,10,"B"],["Corned Beef 340g","055270961100",5.99,10,"B"],["Cutlery","836739321877",4.51,10,"B"],["Cutlery","836739322140",4.51,10,"B"],["Dettol","8901396354604",13.55,10,"B"],["DOOR GUARD LOCK","063252376811",3.94,10,"B"],["Eggs 12 Large","065651000021",5.0,10,"B"],["Gain Detergent liq.","030772247747",7.9,10,"B"],["gain original","030772225813",7.9,10,"B"],["hip flask","6911831010035",11.29,10,"B"],["hip flask","6911831010028",11.29,10,"B"],["Kirkland towel","096619188109",4.51,10,"B"],["Lays Sour Cream & Onion","060410079492",5.64,10,"B"],["LD LIGHTER","060100043963",3.0,10,"B"],["OCB Regular","3057068029709",3.38,10,"B"],["Old dutch","063474313496",8.92,10,"B"],["Pure Air","055966919088",7.35,10,"B"],["Pure air","806712310402",7.35,10,"B"],["Purew Air","806712305279",7.35,10,"B"],["Small Aluminium tray","055966202173",3.38,10,"B"],["sparemint","073390055905",3.38,10,"B"],["Tea bag","059749938747",8.99,10,"B"],["Tide","030772176368",9.03,10,"B"],["Tide Matic","4987176179906",9.03,10,"B"],["Titan Freezer Bags","059212971448",3.11,10,"B"],["Adaptor Plug","624274515444",3.38,11,"A"],["Borofone cable","6974443384666",9.03,11,"A"],["Borofone Headphones","6941991101694",56.49,11,"A"],["Borofone Headphones","6941991101687",56.49,11,"A"],["Borofone Headphones","6941991101700",56.49,11,"A"],["Bussman Fuze 20A","051712845342",6.77,11,"A"],["CABLE","063252389491",6.77,11,"A"],["GOOD CALL 2.5","32012500806125",2.83,11,"A"],["High Speed Ultra Quiet HX64","6942007652650",39.54,11,"A"],["Hoco - BT Speaker","6931474798886",33.89,11,"A"],["Hoco Adapter","6931474798695",25.98,11,"A"],["Hoco BT Speaker","6931474752857",68.92,11,"A"],["Hoco BT Speaker","6931474798879",33.89,11,"A"],["Hoco Charger","6942007652049",18.07,11,"A"],["Hoco Charger","6942007652056",18.07,11,"A"],["Hoco Charger","69420762056",18.07,11,"A"],["Hoco charger adapter","6942007652032",14.68,11,"A"],["Hoco Hair Clipper","6942007623780",56.49,11,"A"],["Hoco Headset","6942007629188",58.75,11,"A"],["Hoco Headset","6942007640077",40.67,11,"A"],["Hoco Headset wireless BT","6942007647809",28.24,11,"A"],["Hoco Headset with case","6931474788863",40.67,11,"A"],["Hoco Headset with case","6942007609982",42.93,11,"A"],["Hoco Kids HeadPhones","6942007638555",38.41,11,"A"],["Hoco Socket","6942007607124",33.89,11,"A"],["HocoMini Charger","6942007644754",19.2,11,"A"],["Mini HX61","6942007652629",25.98,11,"A"],["Teco Earphones","197111051998",13.55,11,"A"],["Type C cable","197190301632",11.29,11,"A"],["Ultra thin HOCO HX 65","6942007652667",30.5,11,"A"],["USB C TYPE CABLE TECO","197190301625",11.29,11,"A"],["USB-C Earphones","197111058195",13.55,11,"A"],["Van Dens Earphones","5060674508870",18.07,11,"A"],["Van Dens Earphones","5060674507361",10.16,11,"A"],["Van dens earphones","5060674507675",14.68,11,"A"],["Van Dens Earphones","5056594152132",18.07,11,"A"],["Van Dens Power bank","5056594152088",31.63,11,"A"],["Van dens Power bank","5056594171195",25.98,11,"A"],["Ven Dens","5060674507446",14.68,11,"A"],["Ven Dens Adapter","5056594115120",42.93,11,"A"],["Ven Dens Adapter","5056594114888",23.72,11,"A"],["Ven Dens Adapter","5056594172246",20.33,11,"A"],["Ven Dens Cable","5056594153153",14.68,11,"A"],["Ven Dens cable","5056594152125",12.42,11,"A"],["Ven dens cable","5060674507460",14.68,11,"A"],["Ven dens cable","5060674507453",14.68,11,"A"],["Ven Dens Car Holder","5056594114666",13.55,11,"A"],["Ven Dens Car Holder","5056594152323",14.68,11,"A"],["Ven dens car holder","5056594152354",7.9,11,"A"],["Ven Dens Car holder","5056594115175",18.07,11,"A"],["Ven dens car mp3 player","5060674508108",22.59,11,"A"],["Ven dens data cable","5060674508603",11.29,11,"A"],["Ven Dens Gaming Head Phones","5056594195597",30.5,11,"A"],["Ven Dens Mini Car Charger","5060674507743",11.29,11,"A"],["Ven Dens Power Bank","5060674508887",39.54,11,"A"],["Ven Dens Wireless charger","5060674508948",20.33,11,"A"]]}</script>
+<script>
+(function(){
+  "use strict";
+  var RAW = JSON.parse(document.getElementById('data').textContent);
+  var GROUPS = RAW.g;
+  var PRODUCTS = RAW.p.map(function(p, i){
+    return {id:p[1] || ('x'+i), name:p[0], barcode:p[1], price:p[2], gi:p[3], pri:p[4]};
+  });
+  var KEY = 'shelfcount.sample.v1';
+
+  // ---- state -------------------------------------------------------------
+  var state = {counts:{}, outbox:{}, section:0, query:'', offline:false, lastSync:Date.now()};
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved) {
+      var s = JSON.parse(saved);
+      state.counts = s.counts || {};
+      state.outbox = s.outbox || {};
+      state.section = typeof s.section === 'number' ? s.section : 0;
+      state.lastSync = s.lastSync || Date.now();
+    } else {
+      seed();
+    }
+  } catch (e) { seed(); }
+
+  // A count already in progress is what a counter actually opens to.
+  function seed(){
+    var n = 0;
+    for (var i = 0; i < PRODUCTS.length && n < 46; i++) {
+      if (PRODUCTS[i].gi !== 0) continue;
+      var q = [4,12,2,8,20,6,3,15,9,1,7,11][n % 12];
+      state.counts[PRODUCTS[i].id] = {stock:q, min:'', max:'', at:Date.now() - (46 - n) * 26000};
+      n++;
+    }
+  }
+
+  var saveTimer = null;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    }, 200);
+  }
+
+  // ---- elements ----------------------------------------------------------
+  var $ = function(id){ return document.getElementById(id); };
+  var elList = $('list'), elChips = $('chips'), elSearch = $('search'),
+      elSync = $('sync'), elSyncTxt = $('synctxt'), elDone = $('done'),
+      elTotal = $('total'), elFill = $('trackfill'), elScope = $('scope-label'),
+      elSend = $('send'), elResume = $('resume'), elClear = $('clearsearch');
+
+  function outboxCount(){ return Object.keys(state.outbox).length; }
+  function countedIn(gi){
+    var n = 0;
+    for (var i = 0; i < PRODUCTS.length; i++)
+      if (PRODUCTS[i].gi === gi && state.counts[PRODUCTS[i].id]) n++;
+    return n;
+  }
+  function totalIn(gi){
+    var n = 0;
+    for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].gi === gi) n++;
+    return n;
+  }
+
+  // ---- sync status -------------------------------------------------------
+  function ago(ms){
+    var m = Math.round((Date.now() - ms) / 60000);
+    if (m < 1) return 'just now';
+    if (m === 1) return '1 min ago';
+    return m + ' min ago';
+  }
+  function renderSync(sending){
+    var waiting = outboxCount();
+    if (state.offline) {
+      elSync.dataset.state = 'offline';
+      elSyncTxt.textContent = waiting ? 'Offline · ' + waiting + ' held' : 'Offline';
+    } else if (sending) {
+      elSync.dataset.state = 'sending';
+      elSyncTxt.textContent = 'Sending ' + waiting + '…';
+    } else if (waiting) {
+      elSync.dataset.state = 'pending';
+      elSyncTxt.textContent = waiting + ' waiting';
+    } else {
+      elSync.dataset.state = 'synced';
+      elSyncTxt.textContent = 'All sent · ' + ago(state.lastSync);
+    }
+    elSend.disabled = state.offline || (!waiting && !sending);
+  }
+
+  var sending = false;
+  function flush(){
+    if (sending || state.offline || !outboxCount()) { renderSync(false); return; }
+    sending = true;
+    renderSync(true);
+    // Stands in for the call that writes these rows to the sheet.
+    setTimeout(function(){
+      state.outbox = {};
+      state.lastSync = Date.now();
+      sending = false;
+      persist();
+      renderSync(false);
+    }, 900);
+  }
+
+  // ---- rendering ---------------------------------------------------------
+  function visible(){
+    var q = state.query.trim().toLowerCase();
+    if (q) {
+      return PRODUCTS.filter(function(p){
+        return p.name.toLowerCase().indexOf(q) > -1 || p.barcode.indexOf(q) > -1;
+      }).slice(0, 120);
+    }
+    return PRODUCTS.filter(function(p){ return p.gi === state.section; });
+  }
+
+  function renderChips(){
+    elChips.textContent = '';
+    GROUPS.forEach(function(name, gi){
+      var done = countedIn(gi), tot = totalIn(gi);
+      var b = document.createElement('button');
+      b.className = 'chip' + (done === tot ? ' done' : '');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(gi === state.section && !state.query));
+      b.innerHTML = '<span></span><span class="n"></span>';
+      b.firstChild.textContent = name;
+      b.lastChild.textContent = done + '/' + tot;
+      b.addEventListener('click', function(){
+        state.section = gi; state.query = ''; elSearch.value = ''; elClear.hidden = true;
+        persist(); renderAll(); $('app').scrollTop = 0;
+      });
+      elChips.appendChild(b);
+    });
+  }
+
+  function row(p){
+    var c = state.counts[p.id];
+    var el = document.createElement('div');
+    el.className = 'row' + (c ? ' counted' : '');
+
+    var nm = document.createElement('div');
+    nm.className = 'nm';
+    nm.textContent = p.name;
+
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var bc = document.createElement('span'); bc.textContent = p.barcode;
+    var pr = document.createElement('span'); pr.textContent = '$' + p.price.toFixed(2);
+    meta.appendChild(bc); meta.appendChild(pr);
+    if (p.pri === 'A') {
+      var f = document.createElement('span'); f.className = 'pri'; f.textContent = 'count first';
+      meta.appendChild(f);
+    }
+
+    var step = document.createElement('div');
+    step.className = 'stepper';
+    var minus = document.createElement('button');
+    minus.type = 'button'; minus.textContent = '−';
+    minus.setAttribute('aria-label', 'One less ' + p.name);
+    var qty = document.createElement('input');
+    qty.className = 'qty'; qty.id = 'q-' + p.id; qty.type = 'text';
+    qty.inputMode = 'numeric'; qty.setAttribute('pattern', '[0-9]*');
+    qty.placeholder = '–'; qty.value = c ? c.stock : '';
+    qty.setAttribute('aria-label', 'Stock on hand, ' + p.name);
+    var plus = document.createElement('button');
+    plus.type = 'button'; plus.textContent = '+';
+    plus.setAttribute('aria-label', 'One more ' + p.name);
+    step.appendChild(minus); step.appendChild(qty); step.appendChild(plus);
+
+    var mm = document.createElement('div');
+    mm.className = 'minmax';
+    mm.innerHTML = '<label>min <input type="text" inputmode="numeric" pattern="[0-9]*"></label>' +
+                   '<label>max <input type="text" inputmode="numeric" pattern="[0-9]*"></label>' +
+                   '<span class="opt">optional</span>';
+    var minI = mm.querySelectorAll('input')[0], maxI = mm.querySelectorAll('input')[1];
+    minI.id = 'min-' + p.id; maxI.id = 'max-' + p.id;
+    minI.setAttribute('aria-label', 'Minimum for ' + p.name);
+    maxI.setAttribute('aria-label', 'Maximum for ' + p.name);
+    if (c) { minI.value = c.min || ''; maxI.value = c.max || ''; }
+
+    function commit(stock, min, max){
+      if (stock === '' || stock === null) {
+        delete state.counts[p.id];
+        el.classList.remove('counted');
+      } else {
+        state.counts[p.id] = {stock:Number(stock), min:min, max:max, at:Date.now()};
+        el.classList.add('counted');
+      }
+      state.outbox[p.id] = Date.now();   // queued whether or not the network is there
+      persist();
+      renderChips(); renderTotals(); renderSync(sending);
+    }
+
+    function clean(v){ return v.replace(/[^0-9]/g, ''); }
+
+    qty.addEventListener('input', function(){
+      qty.value = clean(qty.value);
+      commit(qty.value, minI.value, maxI.value);
+    });
+    minus.addEventListener('click', function(){
+      var v = Math.max(0, (Number(qty.value) || 0) - 1);
+      qty.value = String(v); commit(v, minI.value, maxI.value);
+    });
+    plus.addEventListener('click', function(){
+      var v = (Number(qty.value) || 0) + 1;
+      qty.value = String(v); commit(v, minI.value, maxI.value);
+    });
+    [minI, maxI].forEach(function(inp){
+      inp.addEventListener('input', function(){
+        inp.value = clean(inp.value);
+        if (qty.value !== '') commit(qty.value, minI.value, maxI.value);
+      });
+    });
+
+    el.appendChild(nm); el.appendChild(meta); el.appendChild(step); el.appendChild(mm);
+    return el;
+  }
+
+  function renderList(){
+    var items = visible();
+    elList.textContent = '';
+    if (!items.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'Nothing matches “' + state.query + '”. Try part of the name, or the barcode.';
+      elList.appendChild(e);
+      return;
+    }
+    var head = document.createElement('div');
+    head.className = 'sechead';
+    var h1 = document.createElement('span'), h2 = document.createElement('span');
+    h2.className = 'c';
+    if (state.query) {
+      h1.textContent = 'Search results';
+      h2.textContent = items.length + (items.length === 120 ? '+' : '');
+    } else {
+      h1.textContent = GROUPS[state.section];
+      h2.textContent = countedIn(state.section) + '/' + totalIn(state.section) + ' counted';
+    }
+    head.appendChild(h1); head.appendChild(h2);
+    elList.appendChild(head);
+
+    var frag = document.createDocumentFragment();
+    items.forEach(function(p){ frag.appendChild(row(p)); });
+    elList.appendChild(frag);
+  }
+
+  function renderTotals(){
+    var scopeAll = !!state.query;
+    var done = scopeAll ? Object.keys(state.counts).length : countedIn(state.section);
+    var tot = scopeAll ? PRODUCTS.length : totalIn(state.section);
+    elScope.textContent = scopeAll ? 'Whole store' : GROUPS[state.section];
+    elDone.textContent = done;
+    elTotal.textContent = tot;
+    elFill.style.width = (tot ? (done / tot) * 100 : 0) + '%';
+    var head = elList.querySelector('.sechead .c');
+    if (head && !state.query) head.textContent = countedIn(state.section) + '/' + totalIn(state.section) + ' counted';
+  }
+
+  function renderAll(){ renderChips(); renderList(); renderTotals(); renderSync(sending); }
+
+  // ---- search ------------------------------------------------------------
+  var searchTimer = null;
+  elSearch.addEventListener('input', function(){
+    elClear.hidden = !elSearch.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function(){
+      state.query = elSearch.value;
+      renderChips(); renderList(); renderTotals();
+    }, 140);
+  });
+  elClear.addEventListener('click', function(){
+    elSearch.value = ''; elClear.hidden = true; state.query = '';
+    renderAll(); elSearch.focus();
+  });
+
+  // ---- background / recovery --------------------------------------------
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    var away = Date.now() - hiddenAt;
+    if (hiddenAt && away > 60000) showResume(Math.round(away / 60000));
+    flush();
+  });
+  window.addEventListener('online', function(){ state.offline = false; flush(); });
+  window.addEventListener('offline', function(){ state.offline = true; renderSync(false); });
+  setInterval(function(){ flush(); }, 12000);
+  setInterval(function(){ if (!outboxCount() && !sending && !state.offline) renderSync(false); }, 30000);
+
+  function showResume(mins){
+    $('resume-title').textContent = 'Back after ' + mins + ' minute' + (mins === 1 ? '' : 's');
+    var waiting = outboxCount();
+    $('resume-body').textContent = waiting
+      ? 'Your count was still here. Sending the ' + waiting + ' entr' + (waiting === 1 ? 'y' : 'ies') + ' that were waiting.'
+      : 'Your count was still here, and everything had already been sent.';
+    elResume.hidden = false;
+  }
+  $('resume-ok').addEventListener('click', function(){ elResume.hidden = true; });
+  elSend.addEventListener('click', flush);
+
+  // ---- sample-only controls ---------------------------------------------
+  $('btn-offline').addEventListener('click', function(){
+    state.offline = !state.offline;
+    this.setAttribute('aria-pressed', String(state.offline));
+    this.textContent = state.offline ? 'Back online' : 'Go offline';
+    if (!state.offline) flush(); else renderSync(false);
+  });
+  $('btn-away').addEventListener('click', function(){
+    hiddenAt = Date.now() - 20 * 60000;
+    showResume(20);
+    if (!state.offline) setTimeout(flush, 600);
+  });
+  $('btn-reset').addEventListener('click', function(){
+    state.counts = {}; state.outbox = {}; state.lastSync = Date.now();
+    persist(); renderAll();
+  });
+
+  renderAll();
+})();
+</script>

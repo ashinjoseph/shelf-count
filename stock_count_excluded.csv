@@ -1,0 +1,27 @@
+product_name,barcode,category,reason,source_file
+KEY CUT,24185,OTHER,Key cut — service,179efcad-ProductList_3.csv
+BOTTLE DEPOSIT,24348,GENERAL NO TAX,Bottle deposit — levy,179efcad-ProductList_3.csv
+DEBIT CARD FEES,24188,GENERAL NO TAX,Debit card fee — fee,179efcad-ProductList_3.csv
+Fob,24564,GENERAL NO TAX,Fob — service,179efcad-ProductList_3.csv
+Grocery (No Tax),,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Grocery (Tax),,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Miscellaneous,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Cigars,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Alcohol,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Patty Combo,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Instant,,LOTTERY,"Lottery — sold from the terminal, not from stock",4ac56422-ProductList.csv
+Lotto,,LOTTERY,"Lottery — sold from the terminal, not from stock",4ac56422-ProductList.csv
+Patty,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Fob,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Key Cut,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+Photo,,,"Department / open key — no barcode, nothing to count",4ac56422-ProductList.csv
+HEINEKEN 330UNIT,72890000224,Beer,"Duplicate barcode — already listed as ""Heineken Bottle 330ml""",4ac56422-ProductList.csv
+Patty Combo,24543,FOOD ITMES,"Patty combo — hot food, made to order",4ac56422-ProductList.csv
+Patty,24542,FOOD ITMES,"Patty — hot food, made to order",4ac56422-ProductList.csv
+PHOTO,24343,GENERAL ITEMS,Photo — service,5e96b053-ProductList_1.csv
+06215718,06215718,DRINKS,Unidentified scan — name is just the barcode,5e96b053-ProductList_1.csv
+061200018769,061200018769,CANDY GUMS CHOCOLATES,Unidentified scan — name is just the barcode,5e96b053-ProductList_1.csv
+060410086407,060410086407,CHIPS & SNACKS,Unidentified scan — name is just the barcode,5e96b053-ProductList_1.csv
+058496467494,058496467494,CANDY GUMS CHOCOLATES,Unidentified scan — name is just the barcode,5e96b053-ProductList_1.csv
+03306000,070330600065,LIGHTER,Unidentified scan — name is just the barcode,5e96b053-ProductList_1.csv
+http://pepsico.info/4yLCUx,069000158203,DRINKS,Unidentified scan — name is a URL,7df442a2-ProductList_2.csv

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>Shelf Count</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#FAF9F7; --surface:#FFFFFF; --surface-2:#F2F0EC;
+  --ink:#14181F; --ink-2:#4A4F57; --ink-3:#807B73;
+  --line:#E3E0DA; --line-2:#D2CEC6;
+  --pine:#1F5F52; --pine-soft:#E4EFEB; --pine-ink:#164a40;
+  --amber:#B8720C; --amber-soft:#FBF0DD;
+  --clay:#A8321F; --clay-soft:#FAE7E3;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#101317; --surface:#181C21; --surface-2:#20252B;
+  --ink:#E9E6E0; --ink-2:#B0ABA3; --ink-3:#847F77;
+  --line:#2A2F36; --line-2:#39404A;
+  --pine:#5CB49F; --pine-soft:#16302B; --pine-ink:#8AD3C0;
+  --amber:#E0A046; --amber-soft:#2E2413;
+  --clay:#E0796A; --clay-soft:#2E1916;
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--surface); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit; color:inherit; cursor:pointer}
+input{font:inherit; color:inherit}
+
+/* ---------- gate ---------- */
+.gate{
+  min-height:100%; display:flex; flex-direction:column; justify-content:center;
+  gap:16px; padding:28px 20px; max-width:420px; margin:0 auto; background:var(--paper);
+}
+.gate h1{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700; font-size:26px;
+  margin:0; letter-spacing:-.01em;
+}
+.gate p{margin:0; color:var(--ink-2); font-size:14px}
+.gate label{display:flex; flex-direction:column; gap:5px; font-size:12px;
+  letter-spacing:.06em; text-transform:uppercase; font-weight:600; color:var(--ink-3)}
+.gate input{
+  padding:11px 12px; border-radius:8px; border:1px solid var(--line-2);
+  background:var(--surface); font-size:16px; font-weight:400; letter-spacing:0; text-transform:none;
+}
+.gate input:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent}
+.gate .go{
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  border-radius:8px; padding:12px; font-size:15px; font-weight:600; margin-top:4px;
+}
+.gate .err{color:var(--clay); font-size:13px; font-weight:500}
+.gate .err[hidden]{display:none}
+
+/* ---------- app ---------- */
+.app{min-height:100%; display:flex; flex-direction:column; background:var(--surface)}
+.app[hidden]{display:none}
+.appbar{
+  position:sticky; top:0; z-index:5; background:var(--surface);
+  border-bottom:1px solid var(--line); padding:10px 14px 0;
+}
+.appbar-top{display:flex; align-items:center; gap:10px}
+.appbar h2{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700;
+  font-size:17px; margin:0; flex:1;
+}
+.appbar h2 small{
+  display:block; font-family:"IBM Plex Sans",sans-serif; font-weight:400;
+  font-size:11.5px; color:var(--ink-3);
+}
+.sync{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 8px;
+  border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap;
+  background:var(--pine-soft); color:var(--pine-ink);
+}
+.sync .dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex:none}
+.sync[data-state="pending"], .sync[data-state="sending"]{background:var(--amber-soft); color:var(--amber)}
+.sync[data-state="sending"] .dot{animation:pulse 1s ease-in-out infinite}
+.sync[data-state="offline"]{background:var(--clay-soft); color:var(--clay)}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){ .sync .dot{animation:none!important} }
+
+.searchwrap{position:relative; margin:10px 0}
+.search{
+  width:100%; padding:9px 32px; border-radius:8px;
+  border:1px solid var(--line-2); background:var(--surface-2); font-size:16px;
+}
+.search:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent}
+.searchwrap .ico{position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--ink-3); pointer-events:none; font-size:13px}
+.clearsearch{position:absolute; right:4px; top:50%; transform:translateY(-50%);
+  border:0; background:none; color:var(--ink-3); padding:6px 8px; line-height:1; border-radius:6px}
+
+.chips{display:flex; gap:6px; overflow-x:auto; padding:0 0 10px; scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none; border:1px solid var(--line-2); background:var(--surface);
+  border-radius:999px; padding:5px 11px; font-size:12.5px; font-weight:500;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.chip .n{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.chip[aria-selected="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.chip[aria-selected="true"] .n{color:var(--paper); opacity:.7}
+.chip.done{border-color:var(--pine)}
+.chip.done .n{color:var(--pine)}
+
+.banner{
+  margin:0 14px 12px; border-radius:var(--r); padding:10px 12px;
+  display:flex; gap:10px; align-items:flex-start;
+  background:var(--amber-soft); border:1px solid var(--amber);
+}
+.banner[hidden]{display:none}
+.banner .txt{flex:1; font-size:13px}
+.banner strong{display:block; font-weight:600; color:var(--amber); font-size:12.5px;
+  letter-spacing:.04em; text-transform:uppercase; margin-bottom:2px}
+.banner button{border:1px solid var(--amber); background:transparent; color:var(--amber);
+  border-radius:7px; padding:5px 10px; font-size:12.5px; font-weight:600; flex:none}
+
+.list{flex:1}
+.sechead{
+  position:sticky; top:0; z-index:2;
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+  background:var(--surface-2); padding:6px 14px;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; gap:10px;
+}
+.sechead .c{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:0}
+.row{
+  display:grid; grid-template-columns:1fr auto; gap:4px 10px; align-items:center;
+  padding:9px 14px 9px 12px; border-bottom:1px solid var(--line);
+  border-left:3px solid transparent;
+}
+.row.counted{border-left-color:var(--pine); background:linear-gradient(90deg,var(--pine-soft),transparent 42%)}
+.row .nm{font-size:14px; font-weight:500; line-height:1.3; overflow-wrap:anywhere}
+.row .meta{
+  grid-column:1; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3);
+  display:flex; gap:8px; flex-wrap:wrap; font-variant-numeric:tabular-nums;
+}
+.row .meta .pri{font-family:"IBM Plex Sans",sans-serif; font-weight:600; letter-spacing:.05em;
+  color:var(--amber); text-transform:uppercase; font-size:10px}
+.stepper{grid-row:1/3; grid-column:2; display:flex; align-items:center; gap:4px}
+.stepper button{
+  width:32px; height:34px; border:1px solid var(--line-2); background:var(--surface);
+  border-radius:7px; font-size:17px; line-height:1; color:var(--ink-2); padding:0;
+}
+.qty{
+  width:52px; height:34px; text-align:center; border-radius:7px;
+  border:1px solid var(--line-2); background:var(--surface-2);
+  font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:16px;
+  font-variant-numeric:tabular-nums; padding:0;
+}
+.qty:focus{outline:2px solid var(--pine); outline-offset:1px; border-color:transparent; background:var(--surface)}
+.row.counted .qty{background:var(--surface); border-color:var(--pine); color:var(--pine-ink); font-weight:600}
+.minmax{grid-column:1/-1; display:none; gap:8px; align-items:center; padding-top:2px;
+  font-size:11.5px; color:var(--ink-3)}
+.row.counted .minmax{display:flex}
+.minmax label{display:inline-flex; align-items:center; gap:5px}
+.minmax input{
+  width:44px; height:26px; text-align:center; border-radius:6px; border:1px dashed var(--line-2);
+  background:transparent; font-family:"IBM Plex Mono",monospace; font-size:13px;
+  font-variant-numeric:tabular-nums; padding:0;
+}
+.minmax input:focus{outline:2px solid var(--pine); outline-offset:1px; border-style:solid}
+.minmax .opt{margin-left:auto; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase}
+.empty{padding:34px 18px; text-align:center; color:var(--ink-3); font-size:13.5px}
+
+.bottombar{
+  position:sticky; bottom:0; z-index:5; background:var(--surface);
+  border-top:1px solid var(--line); padding:10px 14px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  display:flex; align-items:center; gap:12px;
+}
+.bar{flex:1; display:flex; flex-direction:column; gap:5px}
+.bar .n{font-size:12.5px; color:var(--ink-2); display:flex; justify-content:space-between;
+  font-variant-numeric:tabular-nums}
+.bar .n b{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-weight:600}
+.track{height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden}
+.track i{display:block; height:100%; background:var(--pine); border-radius:3px; transition:width .25s ease}
+@media (prefers-reduced-motion:reduce){ .track i{transition:none} }
+.sendbtn{
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  border-radius:8px; padding:9px 14px; font-size:13.5px; font-weight:600; flex:none;
+}
+.sendbtn:disabled{opacity:.4; cursor:default}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <h1>Shelf Count</h1>
+  <p id="gate-intro">Counting stock for the ePOS upload. Your numbers save on this
+     phone as you type, so you can lose signal or put it in your pocket without losing the count.</p>
+  <label for="who">Your name
+    <input id="who" type="text" autocomplete="name" placeholder="e.g. Ashin">
+  </label>
+  <label for="code" id="code-label" hidden>Access code
+    <input id="code" type="text" inputmode="numeric" autocomplete="off" placeholder="Ask the manager">
+  </label>
+  <p class="err" id="gate-err" hidden></p>
+  <button class="go" id="start">Start counting</button>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="appbar">
+    <div class="appbar-top">
+      <h2>Shelf Count<small id="whoami"></small></h2>
+      <span class="sync" id="sync" data-state="synced"><span class="dot"></span><span id="synctxt">Loading</span></span>
+    </div>
+    <div class="searchwrap">
+      <span class="ico">&#9906;</span>
+      <input class="search" id="search" type="search" placeholder="Search name or barcode" aria-label="Search name or barcode" autocomplete="off">
+      <button class="clearsearch" id="clearsearch" hidden aria-label="Clear search">&#10005;</button>
+    </div>
+    <div class="chips" id="chips" role="tablist" aria-label="Sections"></div>
+  </div>
+
+  <div class="banner" id="banner" hidden>
+    <div class="txt"><strong id="banner-title"></strong><span id="banner-body"></span></div>
+    <button id="banner-ok">Got it</button>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="bottombar">
+    <div class="bar">
+      <div class="n"><span id="scope-label"></span><span><b id="done">0</b> of <b id="total">0</b></span></div>
+      <div class="track"><i id="trackfill" style="width:0%"></i></div>
+    </div>
+    <button class="sendbtn" id="send">Send now</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KEY = 'shelfcount.v1';
+  var FLUSH_EVERY = 15000;
+  var MAX_BATCH = 150;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var PRODUCTS = [], GROUPS = [], BY_KEY = {};
+  var state = {who:'', code:'', counts:{}, outbox:{}, section:0, query:'', lastSync:0};
+  var sending = false, retries = 0, retryTimer = null, hiddenAt = 0, booted = false;
+
+  // ---- persistence -------------------------------------------------------
+  // Written on every keystroke. This is what makes a suspended tab, a dead
+  // battery or a walk out of signal survivable.
+  var saveTimer = null;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try {
+        localStorage.setItem(KEY, JSON.stringify({
+          who:state.who, code:state.code, counts:state.counts, outbox:state.outbox,
+          section:state.section, lastSync:state.lastSync, roster:PRODUCTS
+        }));
+      } catch (e) {}
+    }, 200);
+  }
+  function restore(){
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (!s) return null;
+      state.who = s.who || ''; state.code = s.code || '';
+      state.counts = s.counts || {}; state.outbox = s.outbox || {};
+      state.section = s.section || 0; state.lastSync = s.lastSync || 0;
+      return s.roster || null;
+    } catch (e) { return null; }
+  }
+
+  // ---- server ------------------------------------------------------------
+  function hasServer(){
+    return typeof google !== 'undefined' && google.script && google.script.run;
+  }
+
+  function bootstrap(code, onOk, onErr){
+    if (!hasServer()) { onErr({message:'NO_SERVER'}); return; }
+    google.script.run
+      .withSuccessHandler(onOk)
+      .withFailureHandler(onErr)
+      .rpcBootstrap(code);
+  }
+
+  function loadRoster(res){
+    PRODUCTS = res.products.map(function(p, i){
+      p.id = p.key || ('x' + i);
+      return p;
+    });
+    GROUPS = [];
+    BY_KEY = {};
+    PRODUCTS.forEach(function(p){
+      if (GROUPS.indexOf(p.group) === -1) GROUPS.push(p.group);
+      BY_KEY[p.id] = p;
+      // The sheet is the truth for anything this device has not touched, so a
+      // counter who switches phones sees what has already been counted.
+      if (!(p.id in state.counts) && p.stock !== '' && p.stock !== null) {
+        state.counts[p.id] = {stock:p.stock, min:p.min, max:p.max, at:0};
+      }
+    });
+    if (state.section >= GROUPS.length) state.section = 0;
+  }
+
+  // ---- outbox ------------------------------------------------------------
+  function queued(){ return Object.keys(state.outbox); }
+
+  function flush(){
+    if (sending || !queued().length) { renderSync(); return; }
+    if (!navigator.onLine || !hasServer()) { renderSync(); return; }
+
+    var keys = queued().slice(0, MAX_BATCH);
+    var stamps = {};
+    var batch = keys.map(function(k){
+      var e = state.outbox[k];
+      stamps[k] = e.at;
+      return {barcode:BY_KEY[k] ? BY_KEY[k].barcode : k, stock:e.stock, min:e.min, max:e.max, at:e.at, by:state.who};
+    });
+
+    sending = true;
+    renderSync();
+
+    google.script.run
+      .withSuccessHandler(function(res){
+        // Clear only what was actually sent, and only if it has not been
+        // retyped while the request was in flight — otherwise the newer
+        // number would be dropped without ever reaching the sheet.
+        keys.forEach(function(k){
+          if (state.outbox[k] && state.outbox[k].at === stamps[k]) delete state.outbox[k];
+        });
+        state.lastSync = Date.now();
+        sending = false; retries = 0;
+        persist(); renderSync();
+        if (res && res.unmatched && res.unmatched.length) {
+          say('Not in the list', res.unmatched.length + ' item' +
+              (res.unmatched.length === 1 ? '' : 's') +
+              ' could not be matched to the sheet. They are still saved here — tell the manager.');
+        }
+        if (queued().length) flush();
+      })
+      .withFailureHandler(function(err){
+        sending = false;
+        retries++;
+        renderSync();
+        if (err && /BAD_CODE/.test(err.message || '')) {
+          say('Access code changed', 'Your counts are safe on this phone. Reload and enter the new code to send them.');
+          return;
+        }
+        // Back off, but never past a minute — the counter is still working.
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(flush, Math.min(60000, 2000 * Math.pow(2, Math.min(retries, 5))));
+      })
+      .rpcSubmit(state.code, batch);
+  }
+
+  // ---- status ------------------------------------------------------------
+  function ago(ms){
+    if (!ms) return 'not yet';
+    var m = Math.round((Date.now() - ms) / 60000);
+    return m < 1 ? 'just now' : (m === 1 ? '1 min ago' : m + ' min ago');
+  }
+  function renderSync(){
+    var el = $('sync'), txt = $('synctxt'), n = queued().length;
+    if (!booted) { el.dataset.state = 'pending'; txt.textContent = 'Loading'; return; }
+    if (!navigator.onLine) {
+      el.dataset.state = 'offline';
+      txt.textContent = n ? 'Offline · ' + n + ' held' : 'Offline';
+    } else if (sending) {
+      el.dataset.state = 'sending'; txt.textContent = 'Sending ' + n + '…';
+    } else if (n) {
+      el.dataset.state = 'pending'; txt.textContent = n + ' waiting';
+    } else {
+      el.dataset.state = 'synced'; txt.textContent = 'All sent · ' + ago(state.lastSync);
+    }
+    $('send').disabled = sending || !n || !navigator.onLine;
+  }
+  function say(title, body){
+    $('banner-title').textContent = title;
+    $('banner-body').textContent = body;
+    $('banner').hidden = false;
+  }
+
+  // ---- list --------------------------------------------------------------
+  function countedIn(gi){
+    var n = 0;
+    for (var i = 0; i < PRODUCTS.length; i++)
+      if (PRODUCTS[i].group === GROUPS[gi] && state.counts[PRODUCTS[i].id]) n++;
+    return n;
+  }
+  function totalIn(gi){
+    var n = 0;
+    for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].group === GROUPS[gi]) n++;
+    return n;
+  }
+  function visible(){
+    var q = state.query.trim().toLowerCase();
+    if (q) {
+      return PRODUCTS.filter(function(p){
+        return p.name.toLowerCase().indexOf(q) > -1 || p.barcode.indexOf(q) > -1;
+      }).slice(0, 120);
+    }
+    return PRODUCTS.filter(function(p){ return p.group === GROUPS[state.section]; });
+  }
+
+  function renderChips(){
+    var box = $('chips');
+    box.textContent = '';
+    GROUPS.forEach(function(name, gi){
+      var done = countedIn(gi), tot = totalIn(gi);
+      var b = document.createElement('button');
+      b.className = 'chip' + (tot && done === tot ? ' done' : '');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(gi === state.section && !state.query));
+      var s1 = document.createElement('span'); s1.textContent = name;
+      var s2 = document.createElement('span'); s2.className = 'n'; s2.textContent = done + '/' + tot;
+      b.appendChild(s1); b.appendChild(s2);
+      b.addEventListener('click', function(){
+        state.section = gi; state.query = '';
+        $('search').value = ''; $('clearsearch').hidden = true;
+        persist(); renderAll(); window.scrollTo(0, 0);
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function clean(v){ return v.replace(/[^0-9]/g, ''); }
+
+  function row(p){
+    var c = state.counts[p.id];
+    var el = document.createElement('div');
+    el.className = 'row' + (c ? ' counted' : '');
+
+    var nm = document.createElement('div');
+    nm.className = 'nm'; nm.textContent = p.name;
+
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var bc = document.createElement('span'); bc.textContent = p.barcode;
+    var pr = document.createElement('span'); pr.textContent = '$' + (Number(p.price) || 0).toFixed(2);
+    meta.appendChild(bc); meta.appendChild(pr);
+    if (p.priority === 'A') {
+      var f = document.createElement('span'); f.className = 'pri'; f.textContent = 'count first';
+      meta.appendChild(f);
+    }
+
+    var step = document.createElement('div');
+    step.className = 'stepper';
+    var minus = document.createElement('button');
+    minus.type = 'button'; minus.textContent = '−';
+    minus.setAttribute('aria-label', 'One less ' + p.name);
+    var qty = document.createElement('input');
+    qty.className = 'qty'; qty.id = 'q-' + p.id; qty.type = 'text';
+    qty.inputMode = 'numeric'; qty.setAttribute('pattern', '[0-9]*');
+    qty.placeholder = '–'; qty.value = c ? c.stock : '';
+    qty.setAttribute('aria-label', 'Stock on hand, ' + p.name);
+    var plus = document.createElement('button');
+    plus.type = 'button'; plus.textContent = '+';
+    plus.setAttribute('aria-label', 'One more ' + p.name);
+    step.appendChild(minus); step.appendChild(qty); step.appendChild(plus);
+
+    var mm = document.createElement('div');
+    mm.className = 'minmax';
+    var lmin = document.createElement('label');
+    var minI = document.createElement('input');
+    minI.type = 'text'; minI.inputMode = 'numeric'; minI.setAttribute('pattern', '[0-9]*');
+    minI.id = 'min-' + p.id; minI.setAttribute('aria-label', 'Minimum for ' + p.name);
+    lmin.appendChild(document.createTextNode('min ')); lmin.appendChild(minI);
+    var lmax = document.createElement('label');
+    var maxI = document.createElement('input');
+    maxI.type = 'text'; maxI.inputMode = 'numeric'; maxI.setAttribute('pattern', '[0-9]*');
+    maxI.id = 'max-' + p.id; maxI.setAttribute('aria-label', 'Maximum for ' + p.name);
+    lmax.appendChild(document.createTextNode('max ')); lmax.appendChild(maxI);
+    var opt = document.createElement('span'); opt.className = 'opt'; opt.textContent = 'optional';
+    mm.appendChild(lmin); mm.appendChild(lmax); mm.appendChild(opt);
+    if (c) { minI.value = c.min === '' ? '' : c.min; maxI.value = c.max === '' ? '' : c.max; }
+
+    function commit(stock){
+      if (stock === '' || stock === null) {
+        delete state.counts[p.id];
+        el.classList.remove('counted');
+      } else {
+        state.counts[p.id] = {stock:Number(stock), min:minI.value, max:maxI.value, at:Date.now()};
+        el.classList.add('counted');
+      }
+      state.outbox[p.id] = {
+        stock: stock === '' ? '' : Number(stock),
+        min: minI.value, max: maxI.value, at: Date.now()
+      };
+      persist();
+      renderChips(); renderTotals(); renderSync();
+    }
+
+    qty.addEventListener('input', function(){ qty.value = clean(qty.value); commit(qty.value); });
+    minus.addEventListener('click', function(){
+      var v = Math.max(0, (Number(qty.value) || 0) - 1);
+      qty.value = String(v); commit(v);
+    });
+    plus.addEventListener('click', function(){
+      var v = (Number(qty.value) || 0) + 1;
+      qty.value = String(v); commit(v);
+    });
+    [minI, maxI].forEach(function(inp){
+      inp.addEventListener('input', function(){
+        inp.value = clean(inp.value);
+        if (qty.value !== '') commit(qty.value);
+      });
+    });
+
+    el.appendChild(nm); el.appendChild(meta); el.appendChild(step); el.appendChild(mm);
+    return el;
+  }
+
+  function renderList(){
+    var items = visible(), list = $('list');
+    list.textContent = '';
+    if (!items.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = state.query
+        ? 'Nothing matches “' + state.query + '”. Try part of the name, or the barcode.'
+        : 'No products in this section.';
+      list.appendChild(e);
+      return;
+    }
+    var head = document.createElement('div');
+    head.className = 'sechead';
+    var h1 = document.createElement('span'), h2 = document.createElement('span');
+    h2.className = 'c';
+    if (state.query) {
+      h1.textContent = 'Search results';
+      h2.textContent = items.length + (items.length === 120 ? '+' : '');
+    } else {
+      h1.textContent = GROUPS[state.section];
+      h2.textContent = countedIn(state.section) + '/' + totalIn(state.section) + ' counted';
+    }
+    head.appendChild(h1); head.appendChild(h2);
+    list.appendChild(head);
+
+    var frag = document.createDocumentFragment();
+    items.forEach(function(p){ frag.appendChild(row(p)); });
+    list.appendChild(frag);
+  }
+
+  function renderTotals(){
+    var wide = !!state.query;
+    var done = wide ? Object.keys(state.counts).length : countedIn(state.section);
+    var tot = wide ? PRODUCTS.length : totalIn(state.section);
+    $('scope-label').textContent = wide ? 'Whole store' : (GROUPS[state.section] || '');
+    $('done').textContent = done;
+    $('total').textContent = tot;
+    $('trackfill').style.width = (tot ? (done / tot) * 100 : 0) + '%';
+    var c = $('list').querySelector('.sechead .c');
+    if (c && !state.query) c.textContent = countedIn(state.section) + '/' + totalIn(state.section) + ' counted';
+  }
+
+  function renderAll(){ renderChips(); renderList(); renderTotals(); renderSync(); }
+
+  // ---- events ------------------------------------------------------------
+  var searchTimer = null;
+  $('search').addEventListener('input', function(){
+    $('clearsearch').hidden = !this.value;
+    clearTimeout(searchTimer);
+    var v = this.value;
+    searchTimer = setTimeout(function(){
+      state.query = v; renderChips(); renderList(); renderTotals();
+    }, 140);
+  });
+  $('clearsearch').addEventListener('click', function(){
+    $('search').value = ''; this.hidden = true; state.query = ''; renderAll();
+  });
+  $('banner-ok').addEventListener('click', function(){ $('banner').hidden = true; });
+  $('send').addEventListener('click', function(){ retries = 0; flush(); });
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    var away = hiddenAt ? Date.now() - hiddenAt : 0;
+    if (away > 60000 && queued().length) {
+      say('Back after ' + Math.round(away / 60000) + ' minutes',
+          'Your count was still here. Sending the ' + queued().length + ' entries that were waiting.');
+    }
+    retries = 0;
+    flush();
+  });
+  window.addEventListener('online', function(){ retries = 0; flush(); renderSync(); });
+  window.addEventListener('offline', renderSync);
+  setInterval(flush, FLUSH_EVERY);
+  setInterval(function(){ if (!queued().length) renderSync(); }, 30000);
+
+  // ---- boot --------------------------------------------------------------
+  var cachedRoster = restore();
+
+  function openApp(){
+    $('gate').hidden = true;
+    $('app').hidden = false;
+    $('whoami').textContent = state.who ? 'Counting as ' + state.who : '';
+    booted = true;
+    renderAll();
+    flush();
+  }
+
+  function fail(msg){
+    var err = $('gate-err');
+    err.textContent = msg;
+    err.hidden = false;
+    $('start').disabled = false;
+    $('start').textContent = 'Start counting';
+  }
+
+  $('start').addEventListener('click', function(){
+    var who = $('who').value.trim();
+    if (!who) { fail('Put your name in first — it goes next to every count you enter.'); return; }
+    state.who = who;
+    state.code = $('code').value.trim();
+    $('gate-err').hidden = true;
+    this.disabled = true;
+    this.textContent = 'Checking…';
+
+    bootstrap(state.code, function(res){
+      loadRoster(res);
+      persist();
+      openApp();
+    }, function(err){
+      var m = (err && err.message) || '';
+      if (/BAD_CODE/.test(m)) { fail('That code is not right. Ask the manager.'); return; }
+      if (cachedRoster && cachedRoster.length) {
+        // Offline start: the roster and any counts from last time are on the
+        // device, so counting can carry on and send when signal returns.
+        loadRoster({products:cachedRoster});
+        persist();
+        openApp();
+        say('Started offline', 'Using the list saved on this phone. Counts will send when you are back in signal.');
+        return;
+      }
+      fail('Could not reach the sheet, and there is no list saved on this phone yet. Try again in signal.');
+    });
+  });
+
+  // Returning counter: name and code are already known, so go straight in.
+  if (state.who) {
+    $('who').value = state.who;
+    $('code').value = state.code;
+  }
+  bootstrap(state.code, function(res){
+    $('code-label').hidden = !res.needsCode;
+    if (state.who && (!res.needsCode || state.code)) {
+      loadRoster(res); persist(); openApp();
+    }
+  }, function(){
+    $('code-label').hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

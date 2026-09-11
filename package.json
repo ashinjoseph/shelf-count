@@ -1,0 +1,16 @@
+{
+  "name": "shelf-count",
+  "version": "1.0.0",
+  "description": "Temporary stock capture for the ePOS product catalog — phone UI over a Google Sheet",
+  "private": true,
+  "scripts": {
+    "push": "clasp push",
+    "open": "clasp open",
+    "logs": "clasp logs --watch",
+    "build-list": "python3 build_stock_count_list.py"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83"
+  }
+}
