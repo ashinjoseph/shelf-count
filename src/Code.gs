@@ -64,10 +64,48 @@ function checkAccess_(code) {
 
 // ── Sheet helpers ──────────────────────────────────────────
 
+/**
+ * Works whether this project is bound to the spreadsheet (Extensions → Apps
+ * Script) or standalone (script.google.com). A standalone project has no
+ * active spreadsheet, so it is pointed at one by id — run setSpreadsheetId()
+ * once, or set SPREADSHEET_ID under Project Settings → Script Properties.
+ */
+function spreadsheet_() {
+  const bound = SpreadsheetApp.getActiveSpreadsheet();
+  if (bound) return bound;
+
+  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (!id) {
+    throw new Error(
+      'This project is standalone, so it needs to be told which spreadsheet to ' +
+      'use. Run setSpreadsheetId() from the editor, or set SPREADSHEET_ID in ' +
+      'Project Settings → Script Properties. See SETUP.md.'
+    );
+  }
+  return SpreadsheetApp.openById(id);
+}
+
 function sheet_() {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const sh = spreadsheet_().getSheetByName(SHEET_NAME);
   if (!sh) throw new Error('Sheet "' + SHEET_NAME + '" not found — see SETUP.md');
   return sh;
+}
+
+/**
+ * Run once from the editor on a standalone project. Paste the spreadsheet's id
+ * — the long string between /d/ and /edit in its URL — when prompted by the
+ * log, or edit the constant below and run it.
+ */
+function setSpreadsheetId() {
+  const SPREADSHEET_ID = '';   // ← paste the id here, then run this function
+
+  if (!SPREADSHEET_ID) {
+    throw new Error('Paste the spreadsheet id into SPREADSHEET_ID first (it is ' +
+                    'the part of the sheet URL between /d/ and /edit).');
+  }
+  SpreadsheetApp.openById(SPREADSHEET_ID).getName();   // fails fast if wrong
+  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', SPREADSHEET_ID);
+  Logger.log('Linked to: ' + SpreadsheetApp.openById(SPREADSHEET_ID).getName());
 }
 
 /**
@@ -202,6 +240,9 @@ function rpcSubmit(code, entries) {
 // ── Menu ───────────────────────────────────────────────────
 
 function onOpen() {
+  // Standalone projects have no container UI — nothing to attach a menu to.
+  if (!SpreadsheetApp.getActiveSpreadsheet()) return;
+
   SpreadsheetApp.getUi()
     .createMenu('📦 Shelf Count')
     .addItem('Set access code…', 'promptAccessCode')

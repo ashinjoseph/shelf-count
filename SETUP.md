@@ -39,14 +39,50 @@ python build_stock_count_sheet.py
 
 ## 2. Add the script
 
-**Extensions → Apps Script**. In the editor:
+The project already exists:
+<https://script.google.com/u/0/home/projects/1cADgF2xVT_ZTA8Ga-QTJwbl2Pb8NIa2Hn1dh6h1BdxU9wqdvEAOsMV5C/edit>
 
-1. Paste `src/Code.gs` over the default `Code.gs`.
-2. **+ → HTML**, name it `Index` (no extension), paste `src/Index.html`.
-3. **Project Settings → Show "appsscript.json"**, then paste `src/appsscript.json`.
+It is a **standalone** project — created at script.google.com rather than from
+inside the spreadsheet — so it has no active spreadsheet of its own and has to
+be told which one to use. Step 2c does that.
 
-Or, with clasp: `cp .clasp.json.example .clasp.json`, fill in the new script id,
-and `npx clasp push` from this folder.
+### 2a. Push the code
+
+```bash
+npm install
+npx clasp login            # opens a browser; one time only
+cp .clasp.json.example .clasp.json
+npx clasp push
+```
+
+`clasp login` needs a browser, so run this on your own machine.
+
+Pushing replaces whatever is in the project with `src/` — `Code.gs`,
+`Index.html` and `appsscript.json`. If `clasp push` complains about the
+manifest, answer yes; `appsscript.json` is meant to be overwritten.
+
+Prefer to paste by hand? In the editor: `Code.gs` over the default file, then
+**+ → HTML** named `Index` (no extension), then **Project Settings → Show
+"appsscript.json"** and paste that too.
+
+### 2b. Point it at the spreadsheet
+
+Copy the spreadsheet's id from its URL — the part between `/d/` and `/edit`.
+
+In the editor, open `Code.gs`, paste that id into `SPREADSHEET_ID` inside
+`setSpreadsheetId()`, pick that function from the dropdown and **Run**. Approve
+the permissions prompt when it appears.
+
+The log should print the sheet's name. If it throws, the id is wrong or the
+account running the script cannot open that sheet.
+
+Equivalent, without editing code: **Project Settings → Script Properties → Add
+property**, name `SPREADSHEET_ID`, value the id.
+
+> A bound project — made with **Extensions → Apps Script** from the spreadsheet
+> — skips this step entirely and gets the 📦 Shelf Count menu, which a
+> standalone project does not have. Both work; bound is slightly more
+> convenient.
 
 ## 3. Deploy
 
