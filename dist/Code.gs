@@ -574,9 +574,17 @@ input{font:inherit; color:inherit}
       if (GROUPS.indexOf(p.group) === -1) GROUPS.push(p.group);
       BY_KEY[p.id] = p;
       // The sheet is the truth for anything this device has not touched, so a
-      // counter who switches phones sees what has already been counted.
-      if (!(p.id in state.counts) && p.stock !== '' && p.stock !== null) {
-        state.counts[p.id] = {stock:p.stock, min:p.min, max:p.max, at:0};
+      // counter who switches phones sees what has already been counted. at:0
+      // marks an entry as read off the sheet rather than typed here, so a
+      // later read is free to replace it; a real timestamp is this phone's own
+      // work and survives every refresh.
+      var seen = state.counts[p.id];
+      if (!seen || seen.at === 0) {
+        if (p.stock !== '' && p.stock !== null) {
+          state.counts[p.id] = {stock:p.stock, min:p.min, max:p.max, at:0};
+        } else if (seen) {
+          delete state.counts[p.id];
+        }
       }
     });
     if (state.section >= GROUPS.length) state.section = 0;
@@ -885,25 +893,46 @@ input{font:inherit; color:inherit}
     $('retry').hidden = false;
   }
 
+  // A refresh that lands mid-count must not rebuild the list under someone's
+  // thumb. renderList throws the rows away and builds them again, which would
+  // take the focus and the half-typed number with it — which is why typing a
+  // count never calls it. The new figures are in state either way; the next
+  // section tap shows them.
+  function refreshed(res){
+    loadRoster(res);
+    persist();
+    var el = document.activeElement;
+    if (el && el.tagName === 'INPUT' && $('list').contains(el)) return;
+    renderAll();
+  }
+
   function boot(){
     $('boot-err').hidden = true;
     $('retry').hidden = true;
     $('boot-msg').textContent = 'Loading the product list…';
+
+    if (cachedRoster && cachedRoster.length) {
+      // The list is already on the phone. Reading it back off the sheet takes
+      // seconds a counter spends standing at a shelf, to be told the same 800
+      // products as this morning, so the count opens now and the sheet's
+      // version lands behind it.
+      loadRoster({products:cachedRoster});
+      openApp();
+      bootstrap(refreshed, function(err){
+        var why = (err && err.message) ? err.message : String(err || 'Unknown error');
+        say('Counting from the list saved on this phone',
+            navigator.onLine
+              ? 'The sheet did not answer: ' + why + ' Your counts stay here and send when it does.'
+              : 'No signal. Your counts stay here and send when it comes back.');
+      });
+      return;
+    }
 
     bootstrap(function(res){
       loadRoster(res);
       persist();
       openApp();
     }, function(err){
-      if (cachedRoster && cachedRoster.length) {
-        // The list and any counts from last time are on the device, so counting
-        // carries on and sends when signal returns.
-        loadRoster({products:cachedRoster});
-        persist();
-        openApp();
-        say('Started offline', 'Using the list saved on this phone. Counts will send when you are back in signal.');
-        return;
-      }
       bootFailed((err && err.message) ? err.message : String(err || 'Unknown error'));
     });
   }
