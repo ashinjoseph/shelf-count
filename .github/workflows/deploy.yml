@@ -1,0 +1,67 @@
+name: Push to Apps Script
+
+# The clasp credential is a repo secret because that is the only place a
+# long-lived Google token can sit that is not someone's laptop. Mint it with
+# `npx clasp@2 login` on your own machine and paste ~/.clasprc.json into
+# Settings -> Secrets and variables -> Actions -> CLASPRC_JSON.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Pinned to 2.x. clasp 3 changed both the CLI and the shape of
+      # ~/.clasprc.json, so an unpinned install would one day reject a
+      # credential minted by clasp 2 with an error that looks like expiry.
+      - name: Install clasp
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Write credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "CLASPRC_JSON is not set. Add it under Settings -> Secrets and"
+            echo "variables -> Actions. Mint it with: npx clasp@2 login"
+            exit 1
+          fi
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          printf '%s' '{"scriptId":"1cADgF2xVT_ZTA8Ga-QTJwbl2Pb8NIa2Hn1dh6h1BdxU9wqdvEAOsMV5C","rootDir":"src"}' > .clasp.json
+
+      - name: Push src/ to the script project
+        run: clasp push --force
+
+      # Pushing updates the code the editor holds. Whether a phone sees it
+      # depends on how the web app was deployed: a deployment pinned to a
+      # version keeps serving that version until a new one is pushed to it.
+      # --deploymentId updates the deployment in place, so the /exec URL staff
+      # have on their home screens stays the same, which is the whole point.
+      # Set DEPLOYMENT_ID (Settings -> Secrets and variables -> Actions ->
+      # Variables) to the web app's deployment id to turn this on.
+      - name: Deploy a new version to the existing deployment
+        if: vars.DEPLOYMENT_ID != ''
+        run: |
+          clasp deploy \
+            --deploymentId "${{ vars.DEPLOYMENT_ID }}" \
+            --description "$(git rev-parse --short HEAD)"
+
+      - name: Say what still needs doing by hand
+        if: vars.DEPLOYMENT_ID == ''
+        run: |
+          echo "Code pushed. DEPLOYMENT_ID is not set, so no version was deployed."
+          echo "Finish in the editor: Deploy -> Manage deployments -> pencil ->"
+          echo "Version: New version -> Deploy. That keeps the staff /exec link."
+          echo "Set DEPLOYMENT_ID to that deployment's id to automate it."
