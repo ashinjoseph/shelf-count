@@ -4,38 +4,40 @@ Twenty minutes, once. This is a **separate** Apps Script project from StoreOps �
 its own spreadsheet, its own script, its own deployment. Do not push it into the
 StoreOps script.
 
-## 1. Make the spreadsheet
+## 1. Upload the spreadsheet
 
-Create a new Google Sheet called **Shelf Count**. Rename the first tab to
-exactly `stock_count`.
+Upload **`Shelf Count.xlsx`** to Google Drive, then open it and choose
+**File → Save as Google Sheets**.
 
-### Set the barcode column to plain text *before* pasting anything
+That is the whole step. The workbook stores every barcode as a typed text cell,
+so the zero-padded ones — `072890000224`, 640 of them — come through intact with
+nothing to format and nothing to remember.
 
-This is the step that breaks the upload if it is skipped. Most barcodes in this
-catalog are zero-padded — `072890000224`. Sheets reads that as a number and
-throws the leading zero away, and ePOS then matches the wrong product or none at
-all.
+It arrives with two tabs: `readme` (a legend; delete it if you like) and
+`stock_count`, holding one header row and 905 products. The script reads that
+tab **by name**, so leave `stock_count` spelled exactly as it is.
 
-1. Click the **C** column header.
-2. **Format → Number → Plain text**.
+Spot-check `C2` — it should read `071610122741`, not `71610122741`.
 
-Do this on an empty column, before the paste. Fixing it afterwards does not
-bring the zeros back.
+### Do not route this through Excel or CSV
 
-**Never open the CSV in Excel.** Excel strips leading zeros on open, without
-warning, and saving over the file makes it permanent.
+The list also ships as `stock_count_list.csv`, for rebuilding the workbook and
+for diffing against a future POS export. Do not use it to load the sheet.
 
-## 2. Load the products
+CSV carries no type information, so Sheets and Excel both guess "number" on a
+zero-padded barcode and drop the leading zero — silently, and permanently once
+saved. ePOS then matches the wrong product, or none, and you would not find out
+until after the count was finished. Opening the xlsx in Excel and re-saving does
+the same damage.
 
-1. **File → Import → Upload**, choose `stock_count_list.csv`.
-2. Import location: **Replace current sheet**. Separator: **Comma**.
-3. Turn **off** "Convert text to numbers, dates and formulas" — this is the
-   second line of defence for the barcodes.
+Regenerating the workbook after a new POS export:
 
-You should land on 906 rows: one header, 905 products. Spot-check that C2 still
-reads `071610122741` and not `71610122741`.
+```bash
+python build_stock_count_list.py <ProductList*.csv> -o .
+python build_stock_count_sheet.py
+```
 
-## 3. Add the script
+## 2. Add the script
 
 **Extensions → Apps Script**. In the editor:
 
@@ -46,7 +48,7 @@ reads `071610122741` and not `71610122741`.
 Or, with clasp: `cp .clasp.json.example .clasp.json`, fill in the new script id,
 and `npx clasp push` from this folder.
 
-## 4. Deploy
+## 3. Deploy
 
 **Deploy → New deployment → Web app**
 
@@ -60,7 +62,7 @@ account. That is what the access code in the next step is for.
 
 Copy the `/exec` URL. That is the link staff get.
 
-## 5. Set an access code
+## 4. Set an access code
 
 Reload the spreadsheet, then **📦 Shelf Count → Set access code…** and pick
 something short. Anyone with the link can otherwise open the count and write to
@@ -69,7 +71,7 @@ the sheet.
 Leaving it blank turns the gate off, which is fine if the link never leaves a
 group chat you control.
 
-## 6. Hand it out
+## 5. Hand it out
 
 Send staff the `/exec` link. Tell them to **Add to Home Screen** — it opens
 full-screen and, more usefully, is harder to close by accident than a tab.
@@ -117,5 +119,5 @@ generates for you. Once that template is in hand it is a small script.
 |---|---|
 | "Could not reach the sheet" on a phone that has never opened it | No signal on first run. The roster has to come down once before offline use works. |
 | Counts stuck on "n waiting" | Deployment was redeployed and the URL changed, or the access code changed. Counts are safe on the device — reload and re-enter. |
-| An item reports "not in the list" | Its barcode is not in the `stock_count` tab, usually because the zeros were stripped on import. Redo step 1. |
-| Barcodes show as `7.28900002E11` | Column C was not set to plain text before the paste. Redo step 1. |
+| An item reports "not in the list" | Its barcode is not in the `stock_count` tab, usually because the zeros were stripped on import. Re-upload the workbook from step 1. |
+| Barcodes show as `7.28900002E11` | The sheet was loaded from the CSV instead of the xlsx. Re-upload the workbook from step 1. |

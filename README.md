@@ -29,6 +29,7 @@ of the code is the offline queue, which runs in the browser.
 | Filter the export down to real products | done — 905 of 931 rows |
 | Phone UI for entry | done — `src/Index.html` |
 | Capture + offline-safe sync | done — `src/Code.gs` |
+| Spreadsheet to upload | done — `Shelf Count.xlsx` |
 | Deploy | ready — see [`SETUP.md`](SETUP.md) |
 | Export in ePOS import format | **blocked — need the ePOS Bulk Import template** |
 
@@ -37,7 +38,9 @@ of the code is the offline queue, which runs in the browser.
 ```
 shelf-count/
 ├── build_stock_count_list.py   POS export → countable product list
-├── stock_count_list.csv        905 products, pasted into the sheet
+├── build_stock_count_sheet.py  that list → the workbook you upload
+├── Shelf Count.xlsx            upload this to Drive; barcodes typed as text
+├── stock_count_list.csv        905 products, source for the workbook
 ├── stock_count_excluded.csv    the 26 dropped rows and why
 ├── ui-sample.html              standalone mockup, opens in any browser
 ├── SETUP.md                    spreadsheet + deployment steps
